@@ -1,0 +1,18 @@
+Metadata-Version: 2.1
+Name: lanedet
+Version: 1.0
+Summary: Lane Detection open toolbox via Pytorch
+Home-page: https://github.com//turoad/lanedet
+Author: Tu Zheng
+Author-email: zhengtuzju@gmail.com
+License: UNKNOWN
+Keywords: computer vision & lane detection
+Platform: UNKNOWN
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Programming Language :: Python :: 3
+Classifier: Intended Audience :: Developers
+Classifier: Operating System :: OS Independent
+License-File: LICENSE
+
+UNKNOWN
+

@@ -1,0 +1,33 @@
+<launch>
+    <arg name="weights"            default="yolov5l.pt" />
+    <arg name="data"               default="data/coco128.yaml" />
+    <arg name="input_image_topic"  default="webcam1/image_raw" />
+    <arg name="output_image_topic" default="webcam1/image_object_detection" />
+    <arg name="result_topic"       default="webcam1/detected_objects" />
+    <arg name="image_height"       default="480" />
+    <arg name="image_width"        default="640" />
+    <arg name="conf-thres"         default="0.25" />
+    <arg name="iou-thres"          default="0.45" />
+    <arg name="max-det"            default="1000" />
+    <arg name="device"             default="0" />
+    <arg name="classes"            default="[0]" />
+    <arg name="half"               default="False" />
+    <arg name="dnn"                default="False" />
+
+    <node name="object_detector" pkg="object_detector" type="detect_node.py">
+        <param name="weights"            type="str"    value="$(arg weights)" />
+        <param name="data"               type="str"    value="$(arg data)" />
+        <param name="input_image_topic"  type="str"    value="$(arg input_image_topic)" />
+        <param name="output_image_topic" type="str"    value="$(arg output_image_topic)" />
+        <param name="result_topic"       type="str"    value="$(arg result_topic)" />
+        <param name="image_height"       type="int"    value="$(arg image_height)" />
+        <param name="image_width"        type="int"    value="$(arg image_width)" />
+        <param name="conf-thres"         type="double" value="$(arg conf-thres)" />
+        <param name="iou-thres"          type="double" value="$(arg iou-thres)" />
+        <param name="max-det"            type="int"    value="$(arg max-det)" />
+        <param name="device"             type="int"    value="$(arg device)" />
+        <param name="classes"            type="str"    value="$(arg classes)" />
+        <param name="half"               type="bool"   value="$(arg half)" />
+        <param name="dnn"                type="bool"   value="$(arg dnn)" />
+    </node>
+</launch>

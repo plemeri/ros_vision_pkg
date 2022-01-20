@@ -1,2 +1,4 @@
 **/*.pth
 **/*.pt
+**/devel/
+**/build/

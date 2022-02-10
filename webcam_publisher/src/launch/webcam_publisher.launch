@@ -6,6 +6,7 @@
     <arg name="image_width"       default="640" />
     <arg name="image_topic"       default="image_raw" />
     <arg name="camera_info_topic" default="camera_info" />
+    <arg name="publish_rate"      default="30" />
 
     <node name="webcam_publisher" pkg="webcam_publisher" type="webcam_publisher.py">
         <param name="webcam_id"         type="int" value="$(arg webcam_id)" />
@@ -13,5 +14,6 @@
         <param name="image_width"       type="int" value="$(arg image_width)" />
         <param name="image_topic"       type="str" value="$(arg image_topic)" />
         <param name="camera_info_topic" type="str" value="$(arg camera_info_topic)" />
+        <param name="publish_rate"      type="int" value="$(arg publish_rate)" />
     </node>
 </launch>

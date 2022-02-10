@@ -3,9 +3,9 @@
 <launch>
     <arg name="config"             default="configs/condlane/resnet101_culane.py" />
     <arg name="load_from"          default="condlane_r101_culane.pth" />
-    <arg name="input_image_topic"  default="/webcam1/image_raw" />
-    <arg name="output_image_topic" default="/webcam1/image_lane_detection" />
-    <arg name="result_topic"       default="/webcam1/detected_lanes" />
+    <arg name="input_image_topic"  default="webcam1" />
+    <arg name="output_image_topic" default="image_lane_detection" />
+    <arg name="result_topic"       default="detected_lanes" />
 
     <node name="lane_detector" pkg="lane_detector" type="detect_node.py">
         <param name="config"             type="str" value="$(arg config)" />

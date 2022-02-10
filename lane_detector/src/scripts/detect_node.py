@@ -30,7 +30,8 @@ from lanedet.utils.visualization import imshow_lanes
 from lanedet.utils.net_utils import load_network
 from pathlib import Path
 
-H, W = 590, 1640
+# H, W = 590, 1640
+# self.cfg.ori_img_h, self.cfg.ori_img_w = 720, 1280
 
 class LaneDetector:
     def __init__(self, cfg, load_from, image_topic, result_topic, lane_topic):
@@ -45,9 +46,9 @@ class LaneDetector:
         self.result_topic = result_topic
         self.lane_topic = lane_topic
         
-        self.pub1 = rospy.Publisher(self.lane_topic, Float32MultiArray, queue_size=10)
-        self.pub2 = rospy.Publisher(self.result_topic, Image, queue_size=10)
-        self.sub = rospy.Subscriber(self.image_topic, Image, self.callback, tcp_nodelay=True)
+        self.pub1 = rospy.Publisher('/' + self.image_topic + '/' + self.lane_topic, Float32MultiArray, queue_size=10)
+        self.pub2 = rospy.Publisher('/' + self.image_topic + '/' + self.result_topic, Image, queue_size=10)
+        self.sub = rospy.Subscriber('/' + self.image_topic + '/image_raw', Image, self.callback, tcp_nodelay=True)
         
         self.bridge = CvBridge()
     
@@ -60,13 +61,13 @@ class LaneDetector:
     def preprocess(self, x):
         h, w, _ = x.shape # 480 640
         
-        if H / h < W / w:
-            scale = H / h
-            pad_value = int((W - scale * w) // 2) + 1
+        if self.cfg.ori_img_h / h < self.cfg.ori_img_w / w:
+            scale = self.cfg.ori_img_h / h
+            pad_value = int((self.cfg.ori_img_w - scale * w) // 2) + 1
             pad = (0, 0, pad_value, pad_value)
         else:
-            scale = W / w
-            pad_value = int((H - scale * h) // 2)
+            scale = self.cfg.ori_img_w / w
+            pad_value = int((self.cfg.ori_img_h - scale * h) // 2)
             pad = (pad_value, pad_value, 0, 0)
         
         img = cv2.resize(x, (int(w * scale), int(h * scale)))
@@ -92,6 +93,7 @@ class LaneDetector:
 
     def callback(self, msg):
         data = self.to_numpy(msg)
+        # data = cv2.resize(data, (360, 360))
         data = self.preprocess(data)
         data['lanes'] = self.inference(data)[0]
         
@@ -118,14 +120,17 @@ if __name__ == '__main__':
     rospy.init_node('lane_detector')
     config =       rospy.get_param('~config',             'configs/condlane/resnet101_culane.py')
     load_from =    rospy.get_param('~load_from',          'condlane_r101_culane.pth')
-    image_topic =  rospy.get_param('~input_image_topic',  '/webcam1/image_raw')
-    result_topic = rospy.get_param('~output_image_topic', '/webcam1/image_lane_detection')
-    lane_topic =   rospy.get_param('~result_topic',       '/webcam1/detected_lanes')
+    image_topic =  rospy.get_param('~input_image_topic',  'webcam1')
+    result_topic = rospy.get_param('~output_image_topic', 'image_lane_detection')
+    lane_topic =   rospy.get_param('~result_topic',       'detected_lanes')
     
     config =    os.path.join(rospkg.RosPack().get_path('lane_detector'), 'scripts', config)
     load_from = os.path.join(rospkg.RosPack().get_path('lane_detector'), 'scripts', load_from)
 
     cfg = Config.fromfile(config)
+    if 'anchors_freq_path' in cfg.heads.keys():
+        cfg.heads.anchors_freq_path = os.path.join(rospkg.RosPack().get_path('lane_detector'), 'scripts', cfg.heads.anchors_freq_path)
+    
     detector = LaneDetector(cfg, load_from, image_topic, result_topic, lane_topic)
     rospy.spin()
 

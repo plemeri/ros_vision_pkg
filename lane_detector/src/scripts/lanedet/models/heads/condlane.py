@@ -9,6 +9,7 @@ import math
 import random
 
 from ..registry import HEADS
+from .conv_rnn import CLSTM_cell
 
 def _neg_loss(pred, gt, channel_weights=None):
     ''' Modified focal loss. Exactly the same as CornerNet.
@@ -1037,4 +1038,379 @@ class CondLaneHead(nn.Module):
 
     def init_weights(self):
         # ctnet_head will init weights during building
+        pass
+
+
+class PredictFC(nn.Module):
+    
+    def __init__(self, num_params, num_states, in_channels):
+        super(PredictFC, self).__init__()
+        self.num_params = num_params
+        self.fc_param = nn.Conv2d(
+            in_channels,
+            num_params,
+            kernel_size=1,
+            stride=1,
+            padding=0,
+            bias=True)
+        self.fc_state = nn.Conv2d(
+            in_channels,
+            num_states,
+            kernel_size=1,
+            stride=1,
+            padding=0,
+            bias=True)
+
+    def forward(self, input):
+        params = self.fc_param(input)
+        state = self.fc_state(input)
+        return params, state
+
+
+@HEADS.register_module
+class CondLaneRNNHead(nn.Module):
+
+    def __init__(self,
+                 heads,
+                 in_channels,
+                 num_classes,
+                 ct_head,
+                 head_channels=64,
+                 head_layers=1,
+                 disable_coords=False,
+                 branch_channels=64,
+                 branch_out_channels=64,
+                 reg_branch_channels=32,
+                 branch_num_conv=1,
+                 num_params=256,
+                 norm_cfg=dict(type='BN', requires_grad=True),
+                 hm_idx=-1,
+                 mask_idx=0,
+                 compute_locations_pre=True,
+                 location_configs=None,
+                 zero_hidden_state=False,
+                 train_cfg=None,
+                 test_cfg=None):
+        super(CondLaneRNNHead, self).__init__()
+        self.num_classes = num_classes
+        self.hm_idx = hm_idx
+        self.mask_idx = mask_idx
+        self.zero_hidden_state = zero_hidden_state
+
+        # mask branch
+        mask_branch = []
+        mask_branch.append(
+            ConvModule(
+                sum(in_channels),
+                branch_channels,
+                kernel_size=3,
+                padding=1,
+                norm_cfg=norm_cfg))
+        for i in range(branch_num_conv):
+            mask_branch.append(
+                ConvModule(
+                    branch_channels,
+                    branch_channels,
+                    kernel_size=3,
+                    padding=1,
+                    norm_cfg=norm_cfg))
+        mask_branch.append(
+            ConvModule(
+                branch_channels,
+                branch_out_channels,
+                kernel_size=3,
+                padding=1,
+                norm_cfg=None,
+                act_cfg=None))
+        self.add_module('mask_branch', nn.Sequential(*mask_branch))
+
+        self.mask_weight_nums, self.mask_bias_nums = self.cal_num_params(
+            head_layers, disable_coords, branch_out_channels, out_channels=1)
+
+        self.num_mask_params = sum(self.mask_weight_nums) + sum(
+            self.mask_bias_nums)
+
+        self.reg_weight_nums, self.reg_bias_nums = self.cal_num_params(
+            head_layers, disable_coords, reg_branch_channels, out_channels=1)
+
+        self.num_reg_params = sum(self.reg_weight_nums) + sum(
+            self.reg_bias_nums)
+        self.num_gen_params = self.num_mask_params + self.num_reg_params
+
+        self.mask_head = DynamicMaskHead(
+            head_layers,
+            branch_out_channels,
+            branch_out_channels,
+            1,
+            self.mask_weight_nums,
+            self.mask_bias_nums,
+            disable_coords=False,
+            compute_locations_pre=compute_locations_pre,
+            location_configs=location_configs)
+        self.reg_head = DynamicMaskHead(
+            head_layers,
+            reg_branch_channels,
+            reg_branch_channels,
+            1,
+            self.reg_weight_nums,
+            self.reg_bias_nums,
+            disable_coords=False,
+            out_channels=1,
+            compute_locations_pre=compute_locations_pre,
+            location_configs=location_configs)
+        self.ctnet_head = CtnetHead(
+            ct_head['heads'],
+            channels_in=ct_head['channels_in'],
+            final_kernel=ct_head['final_kernel'],
+            head_conv=ct_head['head_conv'])
+        self.rnn_in_channels = ct_head['heads']['params']
+        self.rnn_ceil = CLSTM_cell((1, 1), self.rnn_in_channels, 1,
+                                   self.rnn_in_channels)
+        self.final_fc = PredictFC(self.num_gen_params, 2, self.rnn_in_channels)
+        self.feat_width = location_configs['size'][-1]
+        self.mlp = MLP(self.feat_width, 64, 2, 2)
+
+    def cal_num_params(self,
+                       num_layers,
+                       disable_coords,
+                       channels,
+                       out_channels=1):
+        weight_nums, bias_nums = [], []
+        for l in range(num_layers):
+            if l == num_layers - 1:
+                if num_layers == 1:
+                    weight_nums.append((channels + 2) * out_channels)
+                else:
+                    weight_nums.append(channels * out_channels)
+                bias_nums.append(out_channels)
+            elif l == 0:
+                if not disable_coords:
+                    weight_nums.append((channels + 2) * channels)
+                else:
+                    weight_nums.append(channels * channels)
+                bias_nums.append(channels)
+
+            else:
+                weight_nums.append(channels * channels)
+                bias_nums.append(channels)
+        return weight_nums, bias_nums
+
+    def ctdet_decode(self, heat, thr=0.1):
+
+        def _nms(heat, kernel=3):
+            pad = (kernel - 1) // 2
+
+            hmax = nn.functional.max_pool2d(
+                heat, (kernel, kernel), stride=1, padding=pad)
+            keep = (hmax == heat).float()
+            return heat * keep
+
+        def _format(heat, inds):
+            ret = []
+            for y, x, c in zip(inds[0], inds[1], inds[2]):
+                id_class = c + 1
+                coord = [x, y]
+                score = heat[y, x, c]
+                ret.append({
+                    'coord': coord,
+                    'id_class': id_class,
+                    'score': score
+                })
+            return ret
+
+        heat_nms = _nms(heat)
+        heat_nms = heat_nms.squeeze(0).permute(1, 2, 0).detach().cpu().numpy()
+        inds = np.where(heat_nms > thr)
+        seeds = _format(heat_nms, inds)
+        return seeds
+
+    def forward_train(self, inputs, pos, num_ins, memory):
+
+        def choose_idx(num_ins, idx):
+            count = 0
+            for i in range(len(num_ins) - 1):
+                if idx >= count and idx < count + num_ins[i]:
+                    return i
+                count += num_ins[i]
+            return len(num_ins) - 1
+
+        x_list = list(inputs)
+        f_hm = x_list[self.hm_idx]
+
+        f_mask = x_list[self.mask_idx]
+        m_batchsize = f_hm.size()[0]
+
+        # f_mask
+        z = self.ctnet_head(f_hm)
+        hm, params = z['hm'], z['params']
+        h_hm, w_hm = hm.size()[2:]
+        h_mask, w_mask = f_mask.size()[2:]
+        params = params.view(m_batchsize, self.num_classes, -1, h_hm, w_hm)
+        mask_branch = self.mask_branch(f_mask)
+        reg_branch = mask_branch
+        params = params.permute(0, 1, 3, 4,
+                                2).contiguous().view(-1, self.rnn_in_channels)
+        pos_array = np.array([p[0] for p in pos], np.int32)
+        pos_tensor = torch.from_numpy(pos_array).long().to(
+            params.device).unsqueeze(1)
+
+        pos_tensor = pos_tensor.expand(-1, self.rnn_in_channels)
+        states = []
+        kernel_params = []
+        if pos_tensor.size()[0] == 0:
+            masks = None
+            regs = None
+        else:
+            num_ins_per_seed = []
+            rnn_params = params.gather(0, pos_tensor)
+            ins_count = 0
+            for idx, (_, r_times) in enumerate(pos):
+                rnn_feat_input = rnn_params[idx:idx + 1, :]
+                rnn_feat_input = rnn_feat_input.reshape(1, -1, 1, 1)
+                hidden_h = rnn_feat_input
+                hidden_c = rnn_feat_input
+                rnn_feat_input = rnn_feat_input.reshape(1, 1, -1, 1, 1)
+                if self.zero_hidden_state:
+                    hidden_state = None
+                else:
+                    hidden_state = (hidden_h, hidden_c)
+                num_ins_count = 0
+                for _ in range(r_times):
+                    rnn_out, hidden_state = self.rnn_ceil(
+                        inputs=rnn_feat_input,
+                        hidden_state=hidden_state,
+                        seq_len=1)
+                    rnn_out = rnn_out.reshape(1, -1, 1, 1)
+                    k_param, state = self.final_fc(rnn_out)
+                    k_param = k_param.squeeze(-1).squeeze(-1)
+                    state = state.squeeze(-1).squeeze(-1)
+                    states.append(state)
+                    kernel_params.append(k_param)
+                    num_ins_count += 1
+                    rnn_feat_input = rnn_out
+                    rnn_feat_input = rnn_feat_input.reshape(1, 1, -1, 1, 1)
+                    ins_count += 1
+
+                num_ins_per_seed.append(num_ins_count)
+            kernel_params = torch.cat(kernel_params, 0)
+            states = torch.cat(states, 0)
+            mask_params = kernel_params[:, :self.num_mask_params]
+            reg_params = kernel_params[:, self.num_mask_params:]
+            masks = self.mask_head(mask_branch, mask_params, num_ins)
+            regs = self.reg_head(reg_branch, reg_params, num_ins)
+            feat_range = masks.permute(0, 1, 3,
+                                       2).view(sum(num_ins), w_mask, h_mask)
+            feat_range = self.mlp(feat_range)
+
+        return hm, regs, masks, feat_range, states
+
+    def forward_test(
+            self,
+            inputs,
+            hm_thr=0.3,
+            max_rtimes=6,
+            memory=None,
+            hack_seeds=None,
+    ):
+
+        def parse_pos(seeds, batchsize, num_classes, h, w, device):
+            pos_list = [[p['coord'], p['id_class'] - 1] for p in seeds]
+            poses = []
+            for p in pos_list:
+                [c, r], label = p
+                pos = label * h * w + r * w + c
+                poses.append(pos)
+            poses = torch.from_numpy(np.array(
+                poses, np.long)).long().to(device).unsqueeze(1)
+            return poses
+
+        x_list = list(inputs)
+        f_hm = x_list[self.hm_idx]
+        f_mask = x_list[self.mask_idx]
+        m_batchsize = f_hm.size()[0]
+        f_deep = f_mask
+        m_batchsize = f_deep.size()[0]
+
+        z = self.ctnet_head(f_hm)
+        h_hm, w_hm = f_hm.size()[2:]
+        hm, params = z['hm'], z['params']
+        hm = torch.clamp(hm.sigmoid(), min=1e-4, max=1 - 1e-4)
+        h_mask, w_mask = f_mask.size()[2:]
+        params = params.view(m_batchsize, self.num_classes, -1, h_hm, w_hm)
+
+        mask_branch = self.mask_branch(f_mask)
+        reg_branch = mask_branch
+        self.debug_mask_branch = mask_branch
+        self.debug_reg_branch = reg_branch
+        params = params.permute(0, 1, 3, 4,
+                                2).contiguous().view(-1, self.rnn_in_channels)
+
+        batch_size, num_classes, h, w = hm.size()
+        seeds = self.ctdet_decode(hm, thr=hm_thr)
+        if hack_seeds is not None:
+            seeds = hack_seeds
+        pos_tensor = parse_pos(seeds, batch_size, num_classes, h, w, hm.device)
+        pos_tensor = pos_tensor.expand(-1, self.rnn_in_channels)
+
+        if pos_tensor.size()[0] == 0:
+            return [], hm
+        else:
+            kernel_params = []
+            num_ins_per_seed = []
+            rnn_params = params.gather(0, pos_tensor)
+            for idx in range(pos_tensor.size()[0]):
+                rnn_feat_input = rnn_params[idx:idx + 1, :]
+                rnn_feat_input = rnn_feat_input.reshape(1, -1, 1, 1)
+                hidden_h = rnn_feat_input
+                hidden_c = rnn_feat_input
+                rnn_feat_input = rnn_feat_input.reshape(1, 1, -1, 1, 1)
+
+                if self.zero_hidden_state:
+                    hidden_state = None
+                else:
+                    hidden_state = (hidden_h, hidden_c)
+                num_ins_count = 0
+                for _ in range(max_rtimes):
+                    rnn_out, hidden_state = self.rnn_ceil(
+                        inputs=rnn_feat_input,
+                        hidden_state=hidden_state,
+                        seq_len=1)
+                    rnn_out = rnn_out.reshape(1, -1, 1, 1)
+                    k_param, state = self.final_fc(rnn_out)
+                    k_param = k_param.squeeze(-1).squeeze(-1)
+                    state = state.squeeze(-1).squeeze(-1)
+                    kernel_params.append(k_param)
+                    num_ins_count += 1
+                    if torch.argmax(state[0]) == 0:
+                        break
+                    rnn_feat_input = rnn_out
+                    rnn_feat_input = rnn_feat_input.reshape(1, 1, -1, 1, 1)
+                num_ins_per_seed.append(num_ins_count)
+
+            num_ins = len(kernel_params)
+            kernel_params = torch.cat(kernel_params, 0)
+            mask_params = kernel_params[:, :self.num_mask_params]
+            reg_params = kernel_params[:, self.num_mask_params:]
+            masks = self.mask_head(mask_branch, mask_params, [num_ins])
+            regs = self.reg_head(reg_branch, reg_params, [num_ins])
+            feat_range = masks.permute(0, 1, 3,
+                                       2).view(num_ins, w_mask, h_mask)
+            feat_range = self.mlp(feat_range)
+            start_ins_idx = 0
+            for i, idx_ins in enumerate(num_ins_per_seed):
+                end_ins_idx = start_ins_idx + idx_ins
+                seeds[i]['reg'] = regs[0, start_ins_idx:end_ins_idx, :, :]
+                seeds[i]['mask'] = masks[0, start_ins_idx:end_ins_idx, :, :]
+                seeds[i]['range'] = feat_range[start_ins_idx:end_ins_idx]
+                start_ins_idx = end_ins_idx
+        return seeds, hm
+
+    def forward(
+            self,
+            x_list,
+            hm_thr=0.3,
+    ):
+        return self.forward_test(x_list, )
+
+    def init_weights(self):
         pass

@@ -19,7 +19,7 @@ class WebcamPublisher:
         self.cap.set(cv2.CAP_PROP_FRAME_WIDTH,  self.size[1])
         self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, self.size[0])
 
-        self.frame_id = 'camera' + str(self.ID)
+        self.frame_id = 'webcam' + str(self.ID)
         self.info = CameraInfo()
         self.info.height = self.size[0]
         self.info.width  = self.size[1]

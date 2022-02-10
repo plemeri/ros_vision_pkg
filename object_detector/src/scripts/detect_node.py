@@ -64,9 +64,9 @@ class ObjectDetector:
             self.model.model.half() if half else self.model.model.float()
         self.model.warmup((1, 3, *img_shape), half=half)  # warmup
         
-        self.pub1 = rospy.Publisher(self.detection_topic, Detection2DArray, queue_size=10)
-        self.pub2 = rospy.Publisher(self.result_topic, Image, queue_size=10)
-        self.sub = rospy.Subscriber(self.image_topic, Image, self.callback, tcp_nodelay=True)
+        self.pub1 = rospy.Publisher('/' + self.image_topic + '/' + self.detection_topic, Detection2DArray, queue_size=10)
+        self.pub2 = rospy.Publisher('/' + self.image_topic + '/' + self.result_topic, Image, queue_size=10)
+        self.sub = rospy.Subscriber('/' + self.image_topic + '/image_raw', Image, self.callback, tcp_nodelay=True)
         
         self.bridge = CvBridge()
         
@@ -136,14 +136,14 @@ if __name__ == "__main__":
     rospy.init_node('object_detector')
     weights =          rospy.get_param('~weights',            'yolov5l.pt')
     data =             rospy.get_param('~data',               'data/coco128.yaml')
-    image_topic =      rospy.get_param('~input_image_topic',  'webcam1/image_raw')
-    result_topic =     rospy.get_param('~output_image_topic', 'webcam1/image_object_detection')
-    detection_topic =  rospy.get_param('~result_topic',       'webcam1/detected_objects')
+    image_topic =      rospy.get_param('~input_image_topic',  'webcam1')
+    result_topic =     rospy.get_param('~output_image_topic', 'image_object_detection')
+    detection_topic =  rospy.get_param('~result_topic',       'detected_objects')
     image_height =     rospy.get_param('~image_height',       480)
     image_width =      rospy.get_param('~image_width',        640)
-    conf =             rospy.get_param('~conf-thres',         0.25)
-    iou =              rospy.get_param('~iou-thres',          0.45)
-    max =              rospy.get_param('~max-det',            1000)
+    conf =             rospy.get_param('~conf_thres',         0.25)
+    iou =              rospy.get_param('~iou_thres',          0.45)
+    max =              rospy.get_param('~max_det',            1000)
     device =           rospy.get_param('~device',             0)
     classes =          rospy.get_param('~classes',            '[0]')
     half =             rospy.get_param('~half',               False)

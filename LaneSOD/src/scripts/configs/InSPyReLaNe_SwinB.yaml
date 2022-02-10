@@ -1,0 +1,77 @@
+Model:
+    name: "InSPyReLaNe_SwinB"
+    depth: 64
+    pretrained: True
+
+Train:
+    Dataset:
+        type: "RGB_Dataset"
+        root: "data"
+        sets: ["highway"] #, "bdd100k", "culane"]
+        transforms:
+            resize: 
+                size: [576, 384]
+            random_scale_crop:
+                range: [0.75, 1.25]
+            random_flip:
+                lr: True
+                ud: False
+            random_rotate:
+                range: [-3, 3]
+            random_image_enhance:
+                methods: ['contrast', 'sharpness', 'brightness']
+            tonumpy: NULL
+            normalize: 
+                mean: [0.485, 0.456, 0.406]
+                std: [0.229, 0.224, 0.225]
+            totensor: NULL
+    Dataloader:
+        batch_size: 8
+        shuffle: True
+        num_workers: 8
+        pin_memory: False
+    Optimizer:
+        type: "Adam"
+        lr: 1.0e-04
+        weight_decay: 0.0
+        mixed_precision: False
+    Scheduler:
+        type: "PolyLr"
+        epoch: 240
+        gamma: 0.9
+        minimum_lr: 1.0e-07
+        warmup_iteration: 1000
+    Checkpoint:
+        checkpoint_epoch: 20
+        checkpoint_dir: "snapshots/InSPyReLaNe_SwinB"
+    Debug:
+        keys: ['gaussian', 'laplacian']
+    HyperTune:
+        HyperParameter: ['Train', 'Optimizer', 'lr']
+        Range: [1.0e-5, 2.4e-4, 24]
+    
+Test:
+    Dataset:
+        type: "RGB_Dataset"
+        root: "data"
+        sets: ['highway_test']
+        transforms:
+            resize: 
+                size: [576, 384]
+            tonumpy: NULL
+            normalize: 
+                mean: [0.485, 0.456, 0.406]
+                std: [0.229, 0.224, 0.225]
+            totensor: NULL
+    Dataloader:
+        num_workers: 8
+        pin_memory: True
+    Checkpoint:
+        checkpoint_dir: "snapshots/InSPyReLaNe_SwinB"
+
+Eval:
+    gt_root: "data"
+    pred_root: "snapshots/InSPyReLaNe_SwinB"
+    result_path: "results"
+    datasets: ['highway_test']
+    metrics: ['Sm', 'mae', 'adpEm', 'maxEm', 'avgEm', 'adpFm', 'maxFm', 'avgFm', 'wFm']

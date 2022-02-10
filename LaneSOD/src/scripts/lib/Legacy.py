@@ -13,7 +13,7 @@ from .backbones.Res2Net_v1b import res2net50_v1b_26w_4s
 
 class Legacy(nn.Module):
     # res2net based encoder decoder
-    def __init__(self, depth=64, pretrained=True):
+    def __init__(self, depth=64, pretrained=True, base_size=[576, 384]):
         super(Legacy, self).__init__()
         self.backbone = res2net50_v1b_26w_4s(pretrained=pretrained)
 
@@ -25,9 +25,9 @@ class Legacy(nn.Module):
 
         self.decoder = PAA_d(depth)
 
-        self.attention =  ASCA(depth    , depth, lmap_in=True)
-        self.attention1 = ASCA(depth * 2, depth, lmap_in=True)
-        self.attention2 = ASCA(depth * 2, depth)
+        self.attention  = ASCA(depth    , depth, base_size=base_size, stage=0, lmap_in=True)
+        self.attention1 = ASCA(depth * 2, depth, base_size=base_size, stage=1, lmap_in=True)
+        self.attention2 = ASCA(depth * 2, depth, base_size=base_size, stage=2              )
 
         # self.loss_fn = lambda x, y: weighted_tversky_bce_loss(x, y, alpha=0.2, beta=0.8, gamma=2)
         self.loss_fn = bce_loss

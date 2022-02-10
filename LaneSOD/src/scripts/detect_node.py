@@ -46,7 +46,7 @@ class LaneSOD:
         self.jit = jit
         self.opt = load_config(config)
         
-        self.model = eval(self.opt.Model.name)(depth=self.opt.Model.depth, pretrained=False)
+        self.model = eval(self.opt.Model.name)(depth=self.opt.Model.depth, pretrained=False, base_size=self.opt.Train.Dataset.transforms.resize.size)
         self.model.load_state_dict(torch.load(os.path.join(
             rospkg.RosPack().get_path('lanesod'), 'scripts',
             self.opt.Test.Checkpoint.checkpoint_dir, 'latest.pth'), map_location=torch.device('cpu')), strict=True)

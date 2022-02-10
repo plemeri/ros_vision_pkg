@@ -54,11 +54,15 @@ class simple_attention(nn.Module):
         return x, out
 
 class ASCA(nn.Module):
-    def __init__(self, in_channel, channel, lmap_in=False):
+    def __init__(self, in_channel, channel, base_size=None, stage=None, lmap_in=False):
         super(ASCA, self).__init__()
         self.in_channel = in_channel
         self.channel = channel
         self.lmap_in = lmap_in
+        if base_size is not None and stage is not None:
+            self.stage_size = (base_size[0] // (2 ** stage), base_size[1] // (2 ** stage))
+        else:
+            self.stage_size = None
         
         self.conv_query = nn.Sequential(conv(in_channel, channel, 3, relu=True),
                                         conv(channel, channel, 3, relu=True))
@@ -109,8 +113,15 @@ class ASCA(nn.Module):
         prob = torch.cat(prob, dim=1)
 
         # reshape feature & prob
-        f = x.view(b, h * w, -1)
-        prob = prob.view(b, self.ctx, h * w)
+        if self.stage_size is not None:
+            shape = self.stage_size
+            shape_mul = self.stage_size[0] * self.stage_size[1]
+        else:
+            shape = (h, w)
+            shape_mul = h * w        
+        
+        f = F.interpolate(x, size=shape, mode='bilinear', align_corners=False).view(b, shape_mul, -1)
+        prob = F.interpolate(prob, size=shape, mode='bilinear', align_corners=False).view(b, self.ctx, shape_mul)
         
         # compute context vector
         context = torch.bmm(prob, f).permute(0, 2, 1).unsqueeze(3) # b, 3, c

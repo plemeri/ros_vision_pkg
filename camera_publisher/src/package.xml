@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>webcam_publisher</name>
+  <name>camera_publisher</name>
   <version>0.0.0</version>
-  <description>webcam_publisher</description>
+  <description>camera_publisher</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag -->
   <!-- Example:  -->

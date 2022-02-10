@@ -203,7 +203,7 @@ class VideoLoader:
         return self.size
     
 
-class WebcamLoader:
+class CameraLoader:
     def __init__(self, ID, tfs):
         self.ID = int(ID)
         self.cap = cv2.VideoCapture(self.ID)
@@ -238,7 +238,7 @@ class WebcamLoader:
         else:
             image = Image.fromarray(frame).convert('RGB')
             shape = image.size[::-1]
-            sample = {'image': image, 'shape': shape, 'name': 'webcam', 'original': image}
+            sample = {'image': image, 'shape': shape, 'name': 'camera', 'original': image}
             sample = self.transform(sample)
             sample['image'] = sample['image'].unsqueeze(0)
         

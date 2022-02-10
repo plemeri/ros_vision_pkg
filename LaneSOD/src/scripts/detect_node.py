@@ -42,34 +42,33 @@ def get_transform(tfs):
     return transforms.Compose(comp)
 
 class LaneSOD:
-    def __init__(self, config, image_topic, result_topic, lane_topic, jit=False):
+    def __init__(self, config, image_topic, result_topic, jit=False):
         self.jit = jit
         self.opt = load_config(config)
         
         self.model = eval(self.opt.Model.name)(depth=self.opt.Model.depth, pretrained=False)
         self.model.load_state_dict(torch.load(os.path.join(
+            rospkg.RosPack().get_path('lanesod'), 'scripts',
             self.opt.Test.Checkpoint.checkpoint_dir, 'latest.pth'), map_location=torch.device('cpu')), strict=True)
 
         self.model.cuda()
         self.model.eval()
         
         if self.jit is True:
-            if os.path.isfile(os.path.join(self.opt.Test.Checkpoint.checkpoint_dir, 'jit.pt')) is False:
+            if os.path.isfile(os.path.join(rospkg.RosPack().get_path('lanesod'), 'scripts', self.opt.Test.Checkpoint.checkpoint_dir, 'jit.pt')) is False:
                 self.model = torch.jit.trace(self.model, torch.rand(1, 3, *self.opt.Test.Dataset.transforms.resize.size).cuda())
-                torch.jit.save(self.model, os.path.join(self.opt.Test.Checkpoint.checkpoint_dir, 'jit.pt'))
+                torch.jit.save(self.model, os.path.join(rospkg.RosPack().get_path('lanesod'), 'scripts', self.opt.Test.Checkpoint.checkpoint_dir, 'jit.pt'))
             else:
                 del self.model
-                self.model = torch.jit.load(os.path.join(opt.Test.Checkpoint.checkpoint_dir, 'jit.pt'))
+                self.model = torch.jit.load(os.path.join(rospkg.RosPack().get_path('lanesod'), 'scripts', self.opt.Test.Checkpoint.checkpoint_dir, 'jit.pt'))
                 self.model.cuda()
 
         self.transform = get_transform(self.opt.Test.Dataset.transforms)
         
         self.image_topic = image_topic
         self.result_topic = result_topic
-        self.lane_topic = lane_topic
         
-        self.pub1 = rospy.Publisher('/' + self.image_topic + '/' + self.lane_topic, ImageMsg, queue_size=1)
-        self.pub2 = rospy.Publisher('/' + self.image_topic + '/' + self.result_topic, ImageMsg, queue_size=1)
+        self.pub = rospy.Publisher('/' + self.image_topic + '/' + self.result_topic, ImageMsg, queue_size=1)
         self.sub = rospy.Subscriber('/' + self.image_topic + '/image_raw', ImageMsg, self.callback, tcp_nodelay=False, queue_size=1, buff_size=2**24)
         
         self.bridge = CvBridge()
@@ -82,7 +81,7 @@ class LaneSOD:
 
     def callback(self, msg):
         img = Image.fromarray(self.msg_to_numpy(msg))
-        sample = {'image': img,'shape': img.size[::-1], 'original': img}
+        sample = {'image': img, 'shape': img.size[::-1], 'original': img}
         sample = self.transform(sample)
         sample = to_cuda(sample)
         sample['image'] = sample['image'].unsqueeze(0)
@@ -99,24 +98,19 @@ class LaneSOD:
         img_msg.header.stamp = rospy.Time.now()
         img_msg.header.frame_id = msg.header.frame_id
         
-        # res_msg = self.bridge.cv2_to_imgmsg(img)
-        # res_msg.header.stamp = rospy.Time.now()
-        # res_msg.header.frame_id = msg.header.frame_id
-        
-        self.pub1.publish(img_msg)
-        # self.pub2.publish(res_msg)
+        self.pub.publish(img_msg)
         
 
 if __name__ == '__main__':
     rospy.init_node('lanesod')
-    config =       rospy.get_param('~config',             'configs/InSPyReLaNe_Res2Net50.yaml')
+    config =       rospy.get_param('~config',             'configs/InSPyReLaNe_SwinB.yaml')
     jit =          rospy.get_param('~jit',                'True')
-    image_topic =  rospy.get_param('~input_image_topic',  'images')
-    result_topic = rospy.get_param('~output_image_topic', 'image_lane_detection')
-    lane_topic =   rospy.get_param('~result_topic',       'detected_lanes')
+    image_topic =  rospy.get_param('~input_image_topic',  'camera1')
+    result_topic = rospy.get_param('~result_topic', 'detected_lanes')
     
-    # config =    os.path.join(rospkg.RosPack().get_path('lanesod'), 'scripts', config)
+    config =    os.path.join(rospkg.RosPack().get_path('lanesod'), 'scripts', config)
+    print(config)
 
-    detector = LaneSOD(config, image_topic, result_topic, lane_topic, jit)
+    detector = LaneSOD(config, image_topic, result_topic, jit)
     rospy.spin()
 

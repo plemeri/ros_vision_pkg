@@ -27,7 +27,7 @@ class InSPyReLaNe(nn.Module):
 
         self.decoder = PAA_d(self.depth)
 
-        self.attention = ASCA(self.depth    , depth, lmap_in=True)
+        self.attention0 = ASCA(self.depth    , depth, lmap_in=True)
         self.attention1 = ASCA(self.depth * 2, depth, lmap_in=True)
         self.attention2 = ASCA(self.depth * 2, depth)
 
@@ -72,7 +72,7 @@ class InSPyReLaNe(nn.Module):
         d1 = self.pyr.rec(d2.detach(), p1) #2
         
         f1 = self.res(f1, (H, W))
-        _, p0 = self.attention(f1, d1.detach(), p1.detach()) #2
+        _, p0 = self.attention0(f1, d1.detach(), p1.detach()) #2
         d0 = self.pyr.rec(d1.detach(), p0) #2
         
         if type(sample) == dict and 'gt' in sample.keys() and sample['gt'] is not None:

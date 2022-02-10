@@ -120,7 +120,7 @@ if __name__ == '__main__':
     rospy.init_node('lane_detector')
     config =       rospy.get_param('~config',             'configs/condlane/resnet101_culane.py')
     load_from =    rospy.get_param('~load_from',          'condlane_r101_culane.pth')
-    image_topic =  rospy.get_param('~input_image_topic',  'webcam1')
+    image_topic =  rospy.get_param('~input_image_topic',  'camera1')
     result_topic = rospy.get_param('~output_image_topic', 'image_lane_detection')
     lane_topic =   rospy.get_param('~result_topic',       'detected_lanes')
     

@@ -1,12 +1,12 @@
 <launch>
     <arg name="weights"            default="yolov5l.pt" />
     <arg name="data"               default="data/coco128.yaml" />
-    <arg name="input_image_topic"  default="webcam1" />
+    <arg name="input_image_topic"  default="camera1" />
     <arg name="output_image_topic" default="image_object_detection" />
     <arg name="result_topic"       default="detected_objects" />
     <arg name="image_height"       default="480" />
     <arg name="image_width"        default="640" />
-    <arg name="conf_thres"         default="0.25" />
+    <arg name="conf_thres"         default="0.60" />
     <arg name="iou_thres"          default="0.45" />
     <arg name="max_det"            default="1000" />
     <arg name="device"             default="0" />

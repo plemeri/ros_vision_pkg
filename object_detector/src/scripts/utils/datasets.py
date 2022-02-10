@@ -238,8 +238,8 @@ class LoadImages:
         return self.nf  # number of files
 
 
-class LoadWebcam:  # for inference
-    # YOLOv5 local webcam dataloader, i.e. `python detect.py --source 0`
+class LoadCamera:  # for inference
+    # YOLOv5 local camera dataloader, i.e. `python detect.py --source 0`
     def __init__(self, pipe='0', img_size=640, stride=32):
         self.img_size = img_size
         self.stride = stride
@@ -264,8 +264,8 @@ class LoadWebcam:  # for inference
 
         # Print
         assert ret_val, f'Camera Error {self.pipe}'
-        img_path = 'webcam.jpg'
-        s = f'webcam {self.count}: '
+        img_path = 'camera.jpg'
+        s = f'camera {self.count}: '
 
         # Padded resize
         img = letterbox(img0, self.img_size, stride=self.stride)[0]
@@ -304,7 +304,7 @@ class LoadStreams:
                 check_requirements(('pafy', 'youtube_dl'))
                 import pafy
                 s = pafy.new(s).getbest(preftype="mp4").url  # YouTube URL
-            s = eval(s) if s.isnumeric() else s  # i.e. s = '0' local webcam
+            s = eval(s) if s.isnumeric() else s  # i.e. s = '0' local camera
             cap = cv2.VideoCapture(s)
             assert cap.isOpened(), f'{st}Failed to open {s}'
             w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))

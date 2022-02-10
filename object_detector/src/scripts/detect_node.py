@@ -66,7 +66,7 @@ class ObjectDetector:
         
         self.pub1 = rospy.Publisher('/' + self.image_topic + '/' + self.detection_topic, Detection2DArray, queue_size=10)
         self.pub2 = rospy.Publisher('/' + self.image_topic + '/' + self.result_topic, Image, queue_size=10)
-        self.sub = rospy.Subscriber('/' + self.image_topic + '/image_raw', Image, self.callback, tcp_nodelay=True)
+        self.sub = rospy.Subscriber('/' + self.image_topic + '/image_raw', Image, self.callback, tcp_nodelay=True, queue_size=1, buff_size=2**24)
         
         self.bridge = CvBridge()
         
@@ -136,7 +136,7 @@ if __name__ == "__main__":
     rospy.init_node('object_detector')
     weights =          rospy.get_param('~weights',            'yolov5l.pt')
     data =             rospy.get_param('~data',               'data/coco128.yaml')
-    image_topic =      rospy.get_param('~input_image_topic',  'webcam1')
+    image_topic =      rospy.get_param('~input_image_topic',  'camera1')
     result_topic =     rospy.get_param('~output_image_topic', 'image_object_detection')
     detection_topic =  rospy.get_param('~result_topic',       'detected_objects')
     image_height =     rospy.get_param('~image_height',       480)

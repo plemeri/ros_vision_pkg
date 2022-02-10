@@ -74,7 +74,7 @@ def inference(opt, args):
     _format = None
     
     if args.source.isnumeric() is True:
-        _format = 'Webcam'
+        _format = 'Camera'
 
     elif os.path.isdir(args.source):
         save_dir = os.path.join('results', args.source.split(os.sep)[-1])
@@ -146,7 +146,7 @@ def inference(opt, args):
             Image.fromarray(img).save(os.path.join(save_dir, sample['name'] + '.png'))
         elif _format == 'Video' and writer is not None:
             writer.write(img)
-        elif _format == 'Webcam':
+        elif _format == 'Camera':
             cv2.imshow('InSPyReNet', img)
 
 if __name__ == "__main__":

@@ -1,17 +1,15 @@
 
 
 <launch>
-    <arg name="config"             default="configs/InSPyReLaNe_Res2Net50.yaml" />
-    <arg name="jit"                default="False" />
-    <arg name="input_image_topic"  default="webcam1" />
-    <arg name="output_image_topic" default="image_lane_detection" />
+    <arg name="config"             default="configs/Legacy.yaml" />
+    <arg name="jit"                default="True" />
+    <arg name="input_image_topic"  default="camera1" />
     <arg name="result_topic"       default="detected_lanes" />
 
     <node name="lanesod" pkg="lanesod" type="detect_node.py">
         <param name="config"             type="str"  value="$(arg config)" />
         <param name="jit"                type="bool" value="$(arg jit)" />
         <param name="input_image_topic"  type="str"  value="$(arg input_image_topic)" />
-        <param name="output_image_topic" type="str"  value="$(arg output_image_topic)" />
         <param name="result_topic"       type="str"  value="$(arg result_topic)" />
     </node>
 </launch>

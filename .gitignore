@@ -2,3 +2,4 @@
 **/*.pt
 **/devel/
 **/build/
+**/snapshots/

@@ -3,7 +3,7 @@
 Run inference on images, videos, directories, streams, etc.
 
 Usage - sources:
-    $ python path/to/detect.py --weights yolov5s.pt --source 0              # webcam
+    $ python path/to/detect.py --weights yolov5s.pt --source 0              # camera
                                                              img.jpg        # image
                                                              vid.mp4        # video
                                                              path/          # directory
@@ -49,7 +49,7 @@ from utils.torch_utils import select_device, time_sync
 
 @torch.no_grad()
 def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
-        source=ROOT / 'data/images',  # file/dir/URL/glob, 0 for webcam
+        source=ROOT / 'data/images',  # file/dir/URL/glob, 0 for camera
         data=ROOT / 'data/coco128.yaml',  # dataset.yaml path
         imgsz=(640, 640),  # inference size (height, width)
         conf_thres=0.25,  # confidence threshold
@@ -79,7 +79,7 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
     save_img = not nosave and not source.endswith('.txt')  # save inference images
     is_file = Path(source).suffix[1:] in (IMG_FORMATS + VID_FORMATS)
     is_url = source.lower().startswith(('rtsp://', 'rtmp://', 'http://', 'https://'))
-    webcam = source.isnumeric() or source.endswith('.txt') or (is_url and not is_file)
+    camera = source.isnumeric() or source.endswith('.txt') or (is_url and not is_file)
     if is_url and is_file:
         source = check_file(source)  # download
 
@@ -99,7 +99,7 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
         model.model.half() if half else model.model.float()
 
     # Dataloader
-    if webcam:
+    if camera:
         view_img = check_imshow()
         cudnn.benchmark = True  # set True to speed up constant image size inference
         dataset = LoadStreams(source, img_size=imgsz, stride=stride, auto=pt)
@@ -138,7 +138,7 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
         # Process predictions
         for i, det in enumerate(pred):  # per image
             seen += 1
-            if webcam:  # batch_size >= 1
+            if camera:  # batch_size >= 1
                 p, im0, frame = path[i], im0s[i].copy(), dataset.count
                 s += f'{i}: '
             else:
@@ -216,7 +216,7 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
 def parse_opt():
     parser = argparse.ArgumentParser()
     parser.add_argument('--weights', nargs='+', type=str, default=ROOT / 'yolov5s.pt', help='model path(s)')
-    parser.add_argument('--source', type=str, default=ROOT / 'data/images', help='file/dir/URL/glob, 0 for webcam')
+    parser.add_argument('--source', type=str, default=ROOT / 'data/images', help='file/dir/URL/glob, 0 for camera')
     parser.add_argument('--data', type=str, default=ROOT / 'data/coco128.yaml', help='(optional) dataset.yaml path')
     parser.add_argument('--imgsz', '--img', '--img-size', nargs='+', type=int, default=[640], help='inference size h,w')
     parser.add_argument('--conf-thres', type=float, default=0.25, help='confidence threshold')

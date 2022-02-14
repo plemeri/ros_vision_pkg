@@ -1,20 +1,23 @@
-#!/home/taehoon1018/anaconda3/envs/tensorrt/bin/python3
-import numpy as np
+#!/home/taehoon1018/anaconda3/envs/inspyrenet/bin/python3
 import torch
-import cv2
 import os
-import os.path as osp
-import glob
 import argparse
+import tqdm
 import sys
-from tqdm import tqdm
+import cv2
+
+import numpy as np
+# from torch2trt import torch2trt
+from PIL import Image
+
+print(sys.executable)
 
 import rospy
 import rospkg
 
 from cv_bridge import CvBridge
 from std_msgs.msg import String, Header, Float32MultiArray, MultiArrayDimension
-from sensor_msgs.msg import Image as Image
+from sensor_msgs.msg import Image as ImageMsg
 from sensor_msgs.msg import CameraInfo
 from vision_msgs.msg import Detection2DArray, Detection2D, BoundingBox2D, ObjectHypothesisWithPose
 from visualization_msgs.msg import ImageMarker
@@ -23,114 +26,91 @@ filepath = os.path.split(__file__)[0]
 repopath = os.path.split(filepath)[0]
 sys.path.append(repopath)
 
-from lanedet.datasets.process import Process
-from lanedet.models.registry import build_net
-from lanedet.utils.config import Config
-from lanedet.utils.visualization import imshow_lanes
-from lanedet.utils.net_utils import load_network
-from pathlib import Path
+from lib import *
+from utils.misc import *
+from data.dataloader import *
+from data.custom_transforms import *
 
-# H, W = 590, 1640
-# self.cfg.ori_img_h, self.cfg.ori_img_w = 720, 1280
+def get_transform(tfs):
+    comp = []
+    for key, value in zip(tfs.keys(), tfs.values()):
+        if value is not None:
+            tf = eval(key)(**value)
+        else:
+            tf = eval(key)()
+        comp.append(tf)
+    return transforms.Compose(comp)
 
-class LaneDetector:
-    def __init__(self, cfg, load_from, image_topic, result_topic, lane_topic):
-        self.cfg = cfg
-        self.processes = Process(cfg.val_process, cfg)
-        self.net = build_net(self.cfg)
-        self.net = torch.nn.parallel.DataParallel(self.net, device_ids = range(1)).cuda()
-        self.net.eval()
-        load_network(self.net, load_from)
+class LaneSOD:
+    def __init__(self, config, image_topic, result_topic, jit=False):
+        self.jit = jit
+        self.opt = load_config(config)
+        
+        self.model = eval(self.opt.Model.name)(depth=self.opt.Model.depth, pretrained=False, base_size=self.opt.Train.Dataset.transforms.resize.size)
+        self.model.load_state_dict(torch.load(os.path.join(
+            rospkg.RosPack().get_path('lane_detector'), 'scripts',
+            self.opt.Test.Checkpoint.checkpoint_dir, 'latest.pth'), map_location=torch.device('cpu')), strict=True)
+
+        self.model.cuda()
+        self.model.eval()
+        
+        if self.jit is True:
+            if os.path.isfile(os.path.join(rospkg.RosPack().get_path('lane_detector'), 'scripts', self.opt.Test.Checkpoint.checkpoint_dir, 'jit.pt')) is False:
+                self.model = torch.jit.trace(self.model, torch.rand(1, 3, *self.opt.Test.Dataset.transforms.resize.size).cuda())
+                torch.jit.save(self.model, os.path.join(rospkg.RosPack().get_path('lane_detector'), 'scripts', self.opt.Test.Checkpoint.checkpoint_dir, 'jit.pt'))
+            else:
+                del self.model
+                self.model = torch.jit.load(os.path.join(rospkg.RosPack().get_path('lane_detector'), 'scripts', self.opt.Test.Checkpoint.checkpoint_dir, 'jit.pt'))
+                self.model.cuda()
+
+        self.transform = get_transform(self.opt.Test.Dataset.transforms)
         
         self.image_topic = image_topic
         self.result_topic = result_topic
-        self.lane_topic = lane_topic
         
-        self.pub1 = rospy.Publisher('/' + self.image_topic + '/' + self.lane_topic, Float32MultiArray, queue_size=10)
-        self.pub2 = rospy.Publisher('/' + self.image_topic + '/' + self.result_topic, Image, queue_size=10)
-        self.sub = rospy.Subscriber('/' + self.image_topic + '/image_raw', Image, self.callback, tcp_nodelay=True)
+        self.pub = rospy.Publisher('/' + self.image_topic + '/' + self.result_topic, ImageMsg, queue_size=1)
+        self.sub = rospy.Subscriber('/' + self.image_topic + '/image_raw', ImageMsg, self.callback, tcp_nodelay=False, queue_size=1, buff_size=2**24)
         
         self.bridge = CvBridge()
-    
-    def to_numpy(self, msg):
+        
+    def msg_to_numpy(self, msg):
         img = msg.data
         img = np.frombuffer(img, dtype=np.uint8)
         img = img.reshape((msg.height, msg.width, 3))
         return img
-        
-    def preprocess(self, x):
-        h, w, _ = x.shape # 480 640
-        
-        if self.cfg.ori_img_h / h < self.cfg.ori_img_w / w:
-            scale = self.cfg.ori_img_h / h
-            pad_value = int((self.cfg.ori_img_w - scale * w) // 2) + 1
-            pad = (0, 0, pad_value, pad_value)
-        else:
-            scale = self.cfg.ori_img_w / w
-            pad_value = int((self.cfg.ori_img_h - scale * h) // 2)
-            pad = (pad_value, pad_value, 0, 0)
-        
-        img = cv2.resize(x, (int(w * scale), int(h * scale)))
-        img = cv2.copyMakeBorder(img, *pad, cv2.BORDER_CONSTANT, None, value=0)
-
-        data = {'img': img, 'lanes': []}
-        data = self.processes(data)
-        data['img'] = data['img'].unsqueeze(0)
-        data['ori_img'] = x
-        data['scale'] = scale
-        data['pad'] = pad
-        return data
-
-    def inference(self, data):
-        with torch.no_grad():
-            data = self.net(data)
-            data = self.net.module.get_lanes(data)
-        return data
-
-    def postprocess(self, data):
-        lanes = [(lane.to_array(self.cfg) - [data['pad'][2], data['pad'][0]]) / data['scale'] for lane in data['lanes']]
-        return lanes, imshow_lanes(data['ori_img'], lanes).astype(np.uint8)
 
     def callback(self, msg):
-        data = self.to_numpy(msg)
-        # data = cv2.resize(data, (360, 360))
-        data = self.preprocess(data)
-        data['lanes'] = self.inference(data)[0]
-        
-        lanes, out_img = self.postprocess(data)
-        
-        lane_msg = Float32MultiArray()
-        lanes = np.array(lanes)
-        
-        if len(lanes.shape) == 3:
-            
-            lane_msg.data = lanes.flatten()
-            lane_msg.layout.dim.append(MultiArrayDimension(label='lane_num', size=lanes.shape[0]))
-            lane_msg.layout.dim.append(MultiArrayDimension(label='point_num', size=lanes.shape[1]))
-            lane_msg.layout.dim.append(MultiArrayDimension(label='point', size=lanes.shape[2]))
-        
-        res_msg = self.bridge.cv2_to_imgmsg(out_img)
-        res_msg.header.stamp = rospy.Time.now()
-        res_msg.header.frame_id = msg.header.frame_id
+        img = Image.fromarray(self.msg_to_numpy(msg))
+        sample = {'image': img, 'shape': img.size[::-1], 'original': img}
+        sample = self.transform(sample)
+        sample = to_cuda(sample)
+        sample['image'] = sample['image'].unsqueeze(0)
 
-        self.pub1.publish(lane_msg)
-        self.pub2.publish(res_msg)
+        with torch.no_grad():
+            out = self.model(sample['image'])
+        pred = to_numpy(out, sample['shape'])
+        # img = np.array(sample['original'])
+        # bg = np.stack([np.ones_like(pred)] * 3, axis=-1) * [0, 255, 0]
+        # img = bg * pred[..., np.newaxis] + img * (1 - pred[..., np.newaxis])
+        # img = img.astype(np.uint8)
+        
+        img_msg = self.bridge.cv2_to_imgmsg((pred * 255).astype(np.uint8))
+        img_msg.header.stamp = rospy.Time.now()
+        img_msg.header.frame_id = msg.header.frame_id
+        
+        self.pub.publish(img_msg)
+        
 
 if __name__ == '__main__':
     rospy.init_node('lane_detector')
-    config =       rospy.get_param('~config',             'configs/condlane/resnet101_culane.py')
-    load_from =    rospy.get_param('~load_from',          'condlane_r101_culane.pth')
+    config =       rospy.get_param('~config',             'configs/InSPyReLaNe_SwinB.yaml')
+    jit =          rospy.get_param('~jit',                'True')
     image_topic =  rospy.get_param('~input_image_topic',  'camera1')
-    result_topic = rospy.get_param('~output_image_topic', 'image_lane_detection')
-    lane_topic =   rospy.get_param('~result_topic',       'detected_lanes')
+    result_topic = rospy.get_param('~result_topic', 'detected_lanes')
     
     config =    os.path.join(rospkg.RosPack().get_path('lane_detector'), 'scripts', config)
-    load_from = os.path.join(rospkg.RosPack().get_path('lane_detector'), 'scripts', load_from)
+    print(config)
 
-    cfg = Config.fromfile(config)
-    if 'anchors_freq_path' in cfg.heads.keys():
-        cfg.heads.anchors_freq_path = os.path.join(rospkg.RosPack().get_path('lane_detector'), 'scripts', cfg.heads.anchors_freq_path)
-    
-    detector = LaneDetector(cfg, load_from, image_topic, result_topic, lane_topic)
+    detector = LaneSOD(config, image_topic, result_topic, jit)
     rospy.spin()
 

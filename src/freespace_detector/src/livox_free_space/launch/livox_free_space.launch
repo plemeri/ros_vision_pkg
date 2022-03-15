@@ -1,0 +1,14 @@
+<launch>
+
+    <arg name = "height_offset"    default="1.8"/>
+    <arg name = "pointcloud_topic" default="/points_raw"/>
+
+    <node pkg="livox_free_space" name="livox_free_space" type="livox_free_space_node" output="screen"/>
+        <param name = "height_offset"    type="double" value="$(arg height_offset)"/>
+        <param name = "pointcloud_topic" type="str"    value="$(arg pointcloud_topic)"/>
+
+</launch>
+
+<!-- <node name="rviz" pkg="rviz" type="rviz" args="-d $(find livox_free_space)/fs.rviz" /> -->
+<!-- launch-prefix="gdb -ex run - -args" -->
+

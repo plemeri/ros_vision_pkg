@@ -1,0 +1,5 @@
+#setup.py bdist_wheel for opencv-python
+
+ouster-sdk
+opencv-python
+matplotlib

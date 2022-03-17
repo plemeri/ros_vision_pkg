@@ -9,7 +9,7 @@
 
 ## 2. Preparation
   + Download checkpoint from [Link](https://drive.google.com/file/d/1DONSeQ43PwAnW-Eehpvo5UaRAJP4mhZy/view?usp=sharing)
-  + Move file as follows `./snapshots/HighwayLane/latest.pth`. Create folder if needed.
+  + Move file as follows `./snapshots/Legacy/latest.pth`. Create folder if needed.
 
 ## 3. Inference
   + Prepare your image folder

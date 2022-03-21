@@ -57,7 +57,7 @@ Test:
         sets: ['highway_test']
         transforms:
             resize: 
-                size: [384, 352]
+                size: [576, 352]
             tonumpy: NULL
             normalize: 
                 mean: [0.485, 0.456, 0.406]

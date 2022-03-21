@@ -1,7 +1,6 @@
 
 
 <launch>
-    <arg name="image_dir"         default="/home/taehoon1018/Downloads/save_imgs" />
     <arg name="image_height"      default="480" />
     <arg name="image_width"       default="640" />
     <arg name="object_topic"      default="/camera1/detected_objects" />
@@ -11,7 +10,6 @@
     <arg name="frame_id"          default="camera1" />
     
     <node name="drive_scene_parser" pkg="drive_scene_parser" type="drive_scene_parser.py">
-        <param name="image_dir"         type="str" value="$(arg image_dir)" />
         <param name="image_height"      type="int" value="$(arg image_height)" />
         <param name="image_width"       type="int" value="$(arg image_width)" />
         <param name="object_topic"      type="str" value="$(arg object_topic)" />

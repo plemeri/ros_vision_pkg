@@ -70,7 +70,12 @@ class DriveSceneParser:
     def to_numpy(self, msg, type='gray'):
         img = msg.data
         img = np.frombuffer(img, dtype=np.uint8)
-        img = img.reshape((*self.size, 3 if type == 'rgb' else 1))
+        img = img.reshape((msg.height, msg.width, -1))
+        
+        if img.shape[-1] == 4:
+            img = img[:, :, :-1]
+        
+        img = cv2.resize(img, self.size[::-1])
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         return img
     def xywh2xyxy(self, x):

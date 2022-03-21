@@ -69,14 +69,18 @@ class LaneSOD:
         self.result_topic = result_topic
         
         self.pub = rospy.Publisher(self.result_topic, ImageMsg, queue_size=1)
-        self.sub = rospy.Subscriber(self.image_topic, ImageMsg, self.callback, tcp_nodelay=False, queue_size=1, buff_size=2**24)
+        self.sub = rospy.Subscriber(self.image_topic, ImageMsg, self.callback, tcp_nodelay=True, queue_size=1, buff_size=2**24)
         
         self.bridge = CvBridge()
         
     def msg_to_numpy(self, msg):
         img = msg.data
         img = np.frombuffer(img, dtype=np.uint8)
-        img = img.reshape((msg.height, msg.width, 3))
+        img = img.reshape((msg.height, msg.width, -1))
+        
+        if img.shape[-1] == 4:
+            img = img[:, :, :-1]
+            
         return img
 
     def callback(self, msg):

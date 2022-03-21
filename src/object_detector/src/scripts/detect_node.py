@@ -73,7 +73,12 @@ class ObjectDetector:
     def to_numpy(self, msg):
         img = msg.data
         img = np.frombuffer(img, dtype=np.uint8)
-        img = img.reshape((msg.height, msg.width, 3))
+        img = img.reshape((msg.height, msg.width, -1))
+        
+        if img.shape[-1] == 4:
+            img = img[:, :, :-1]
+            
+        img = np.ascontiguousarray(img)
         # img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         return img
 

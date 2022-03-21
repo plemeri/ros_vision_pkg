@@ -69,17 +69,26 @@ source devel/setup.bash
 
 # run nodes
 
-## lane_detector
+## Quick Launch (Carla)
+
+```
+source devel/setup.bash
+roslaunch src/Launch/vision_carla.launch
+```
+
+## Launch separately
+
+### lane_detector
 ```
 roslaunch lane_detector lane_detector.launch image_topic:=[image topic from CARLA]
 ```
 
-## object_detector
+### object_detector
 ```
 roslaunch object_detector object_detector.launch image_topic:=[image topic from CARLA]
 ```
 
-## drive_scene_parser
+### drive_scene_parser
 ```
 roslaunch drive_scene_parser drive_scene_parser.launch
 ```

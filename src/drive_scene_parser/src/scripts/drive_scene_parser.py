@@ -81,6 +81,7 @@ class DriveSceneParser:
         img = cv2.resize(img, self.size[::-1])
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         return img
+    
     def xywh2xyxy(self, x):
         # Convert nx4 boxes from [x, y, w, h] to [x1, y1, x2, y2] where xy1=top-left, xy2=bottom-right
         y = np.copy(x)

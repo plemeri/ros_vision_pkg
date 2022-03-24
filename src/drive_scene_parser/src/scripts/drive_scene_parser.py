@@ -5,6 +5,8 @@ import os
 import cv2
 import numpy as np
 import yaml
+import image_geometry
+import ros_numpy
 
 from cv_bridge import CvBridge
 from std_msgs.msg import String, Header
@@ -22,7 +24,6 @@ CLS =  {0: {'class': 'person',     'color': [255,   0,   0]},
         5: {'class': 'bus',        'color': [255,   0, 255]},
         7: {'class': 'truck',      'color': [  0, 255, 255]}
         }
-
 class DriveSceneParser:
     def __init__(self, camera_param, size, publish_rate, result_topic, frame_id, object_topic='', lane_topic='', freespace_topic=''):
         self.size = size
@@ -64,6 +65,8 @@ class DriveSceneParser:
         
         self.ts = mf.ApproximateTimeSynchronizer(self.subs, 10, 0.1)
         self.bridge = CvBridge()
+        self.geometry = image_geometry.PinholeCameraModel()
+        self.geometry.fromCameraInfo(self.info)
         
         self.ts.registerCallback(self.callback)
                 
@@ -107,7 +110,6 @@ class DriveSceneParser:
         self.freespace_msg = freespace_msg
         
     def callback(self, *args):
-        # while not rospy.is_shutdown():
         now = rospy.Time.now()
         
         for i, callback in enumerate(self.callbacks):
@@ -116,8 +118,8 @@ class DriveSceneParser:
         img = np.zeros((*self.size, 3)).astype(np.uint8)
         
         if self.sub_freespace is not None:
-            img = img ## freespace
-        
+            xyz = ros_numpy.point_cloud2.pointcloud2_to_xyz_array(self.freespace_msg)
+            
         if self.sub_lane is not None:
             img = img + self.lane_msg
         
@@ -131,8 +133,6 @@ class DriveSceneParser:
         msg.header.stamp = now
         self.pub1.publish(msg)
         # self.rate.sleep()
-        
-
 
     def __len__(self):
         return 0

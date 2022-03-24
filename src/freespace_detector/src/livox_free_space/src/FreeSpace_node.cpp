@@ -19,10 +19,10 @@
 #include "FreeSpace.hpp"
 
 
-ros::Publisher fs_points_pub;
+// ros::Publisher fs_points_pub;
 ros::Publisher fs_pub;
-ros::Publisher fs_distance_circle_pub; 
-ros::Publisher fs_distance_text_pub;
+// ros::Publisher fs_distance_circle_pub; 
+// ros::Publisher fs_distance_text_pub;
 
 LivoxFreeSpace livox_free_space;
 
@@ -138,7 +138,7 @@ void GenerateFreeSpace(pcl::PointCloud<pcl::PointXYZI> & pc)
     t0 = clock();
 
     int dnum = pc.points.size();
-    std::cout << "Point cloud size: " << dnum << std::endl;
+    // std::cout << "Point cloud size: " << dnum << std::endl;
 
     float *data=(float*)calloc(dnum*4,sizeof(float));
     std::vector<float> free_space;
@@ -159,19 +159,19 @@ void GenerateFreeSpace(pcl::PointCloud<pcl::PointXYZI> & pc)
     cloud->is_dense = false;
     cloud->points.resize(cloud->width*cloud->height);
     ApplyColorToPointCloud(*cloud, pc);
-    sensor_msgs::PointCloud2 msg2;
-    pcl::toROSMsg(*cloud, msg2);
+    // sensor_msgs::PointCloud2 msg2;
+    // pcl::toROSMsg(*cloud, msg2);
     
-    msg2.header.stamp = gheader.stamp;
-    msg2.header.frame_id = pc.header.frame_id;
-    fs_points_pub.publish(msg2);
+    // msg2.header.stamp = gheader.stamp;
+    // msg2.header.frame_id = pc.header.frame_id;
+    // fs_points_pub.publish(msg2);
 
     pcl::PointCloud<pcl::PointXYZI> fs;
     fs.clear();
     for (int i = 0; i < free_space.size(); i+=3)
     {   
         pcl::PointXYZI p;
-        p.x = free_space[i]; p.y = free_space[i + 1]; p.z = 0;
+        p.x = free_space[i]; p.y = free_space[i + 1]; p.z = -height_offset;
         p.intensity = free_space[i + 2];
         fs.points.push_back(p);
     }
@@ -184,17 +184,17 @@ void GenerateFreeSpace(pcl::PointCloud<pcl::PointXYZI> & pc)
     std::vector<float>().swap(free_space);
     t2 = clock();
 
-    printf("\n\n");
-    printf("Total Time: %f, FreeSpace: %f, Publish Results: %f\n\n", 
-            1000.0*(t2 - t0) / CLOCKS_PER_SEC, 1000.0*(t1 - t0) / CLOCKS_PER_SEC, 1000.0*(t2 - t1) / CLOCKS_PER_SEC);
-    printf("---------------------------------------------\n\n");
+    // printf("\n\n");
+    // printf("Total Time: %f, FreeSpace: %f, Publish Results: %f\n\n", 
+    //         1000.0*(t2 - t0) / CLOCKS_PER_SEC, 1000.0*(t1 - t0) / CLOCKS_PER_SEC, 1000.0*(t2 - t1) / CLOCKS_PER_SEC);
+    // printf("---------------------------------------------\n\n");
     free(data);
 
 }
 
 void PointCloudCallback(const sensor_msgs::PointCloud2ConstPtr & cloud_msg)
 {
-    ROS_INFO("Recieved pointcloud: secs = %u, nsecs = %u",cloud_msg->header.stamp.sec,cloud_msg->header.stamp.nsec);
+    // ROS_INFO("Recieved pointcloud: secs = %u, nsecs = %u",cloud_msg->header.stamp.sec,cloud_msg->header.stamp.nsec);
     //this_pc_msg = cloud_msg;
     this_pc_msg = cloud_msg;
     recieved_pc_msg_time = cloud_msg->header.stamp.toSec();
@@ -208,17 +208,18 @@ int main(int argc, char **argv)
 
     ros::NodeHandle n;
     n.getParam("height_offset", height_offset);
-
-    std:string sub_pc_topic;
+    std::string sub_pc_topic;
     n.getParam("pointcloud_topic", sub_pc_topic);
-    std::cout << "height offset:\t\t\t" << height_offset << std::endl;
+    std::string res_topic;
+    n.getParam("result_topic", res_topic);
+    // std::cout << "height offset:\t\t\t" << height_offset << std::endl;
 
     ros::Subscriber sub_pc;
     sub_pc = n.subscribe(sub_pc_topic, 10, PointCloudCallback);
-    fs_points_pub = n.advertise<sensor_msgs::PointCloud2>("/points_centered", 10);
-    fs_distance_circle_pub  = n.advertise<visualization_msgs::MarkerArray>("/circle", 10);
-    fs_distance_text_pub  = n.advertise<visualization_msgs::MarkerArray>("/dis_text", 10);
-    fs_pub = n.advertise<sensor_msgs::PointCloud2>("/freespace", 10);
+    // fs_points_pub = n.advertise<sensor_msgs::PointCloud2>("/points_centered", 10);
+    // fs_distance_circle_pub  = n.advertise<visualization_msgs::MarkerArray>("/circle", 10);
+    // fs_distance_text_pub  = n.advertise<visualization_msgs::MarkerArray>("/dis_text", 10);
+    fs_pub = n.advertise<sensor_msgs::PointCloud2>(res_topic, 10);
 
     ros::Rate rate(20);
     bool status = ros::ok();
@@ -230,8 +231,8 @@ int main(int argc, char **argv)
             PrepareBackground();
             is_background_pub = true;
         }
-        fs_distance_circle_pub.publish(circles);
-        fs_distance_text_pub.publish(texts);
+        // fs_distance_circle_pub.publish(circles);
+        // fs_distance_text_pub.publish(texts);
         pcl::PointCloud<pcl::PointXYZI> pc;
 
         if(recieved_pc_msg_flag)

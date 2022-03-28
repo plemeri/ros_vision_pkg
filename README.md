@@ -2,6 +2,13 @@
 
 # Installation
 
+## prerequisite
+
+```
+sudo apt install ros-[distro]-vision-msgs
+sudo apt install ros-[distro]-cv-bridge
+```
+
 ## build package
 
 ```

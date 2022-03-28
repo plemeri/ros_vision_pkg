@@ -1,0 +1,7 @@
+<launch>
+    <node name="points_ring" pkg="points_ring" type="points_ring.py" clear_params="true">
+        <param name="topic" value="/points_no_ground" />
+        <param name="max_dist" value="50" />
+        <param name="sample_rate" value="1" />
+    </node>
+</launch>

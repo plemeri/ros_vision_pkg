@@ -7,6 +7,8 @@
 ```
 sudo apt install ros-[distro]-vision-msgs
 sudo apt install ros-[distro]-cv-bridge
+
+pip install torch==1.10.1+cu111 torchvision==0.11.2+cu111 -f https://download.pytorch.org/whl/torch_stable.html
 ```
 
 ## build package

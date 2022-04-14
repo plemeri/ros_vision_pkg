@@ -1,4 +1,4 @@
-#!/home/taehoon1018/anaconda3/envs/yolov5/bin/python3
+#!/usr/bin/python3
 
 import argparse
 import os

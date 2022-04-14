@@ -1,4 +1,4 @@
-#!/home/taehoon1018/anaconda3/envs/inspyrenet/bin/python3
+#!/usr/bin/python3
 import torch
 import os
 import argparse

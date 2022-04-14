@@ -32,7 +32,11 @@ source devel/setup.bash
     pip install -r requirements.txt 
     ```
 
-3. change shebang
+3. checkpoint 
+  + Download checkpoint from [Link](https://drive.google.com/file/d/1DONSeQ43PwAnW-Eehpvo5UaRAJP4mhZy/view?usp=sharing)
+  + Move file as follows `src/lane_detector/src/scripts/snapshots/Legacy/latest.pth`. Create folder if needed. and locate checkpoint  
+
+4. change shebang
     open file ```detect_node.py``` and change the first line starts with ```#!```.
     ```
     #!/home/taehoon1018/anaconda3/envs/inspyrenet/bin/python3 --> [your python path]
@@ -83,6 +87,12 @@ source devel/setup.bash
 ```
 source devel/setup.bash
 roslaunch src/Launch/vision_carla.launch
+```
+## Quick Launch (Imcar)
+
+```
+source devel/setup.bash
+roslaunch src/Launch/vision_imcar.launch
 ```
 
 ## Launch separately

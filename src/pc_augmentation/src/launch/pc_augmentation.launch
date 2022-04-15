@@ -1,0 +1,11 @@
+<launch>
+    <arg name="input_topic"   default="/points_raw" />
+    <arg name="output_topic"  default="/points_aug" />
+    <arg name="frame_num"     default="10" />
+
+    <node name="pc_augmentation" pkg="pc_augmentation" type="pc_augmentation.py" clear_params="true">
+        <param name="input_topic"  value="$(arg input_topic)" />
+        <param name="output_topic" value="$(arg output_topic)" />
+        <param name="frame_num"    value="$(arg frame_num)" />
+    </node>
+</launch>

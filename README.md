@@ -7,8 +7,20 @@
 ```
 sudo apt install ros-[distro]-vision-msgs
 sudo apt install ros-[distro]-cv-bridge
+sudo apt install ros-[distro]-pcl-conversions
+sudo apt install ros-[distro]-pcl-ros
+sudo apt install ros-[distro]-roslint
+sudo apt install ros-[distro]-image-geometry
+sudo apt install ros-[distro]-tf2-sensor-msgs
+sudo apt install ros-[distro]-tf2-geometry-msgs
 
-pip install torch==1.10.1+cu111 torchvision==0.11.2+cu111 -f https://download.pytorch.org/whl/torch_stable.html
+sudo apt install libyaml-cpp-dev
+sudo apt install python3-pip
+sudo apt install python-pip
+
+pip3 install --upgrade pip
+pip3 install torch==1.10.1+cu111 torchvision==0.11.2+cu111 -f https://download.pytorch.org/whl/torch_stable.html
+pip3 install src/requirements.txt
 ```
 
 ## build package

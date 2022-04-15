@@ -178,7 +178,7 @@ void GenerateFreeSpace(pcl::PointCloud<pcl::PointXYZI> & pc)
     sensor_msgs::PointCloud2 msg3;
     pcl::toROSMsg(fs, msg3);
     
-    msg3.header.stamp = gheader.stamp;
+    msg3.header.stamp = ros::Time::now();
     msg3.header.frame_id = pc.header.frame_id;
     fs_pub.publish(msg3);
     std::vector<float>().swap(free_space);

@@ -1,0 +1,12 @@
+scikit-build
+opencv-python
+pyyaml
+tqdm
+easydict
+rospy
+rospkg
+pandas
+timm
+requests
+matplotlib
+seaborn

@@ -1,4 +1,6 @@
-#!/usr/bin/python3
+#!/usr/bin/env python
+from __future__ import print_function, absolute_import, division
+
 import rospy
 import rospkg
 import os
@@ -16,6 +18,10 @@ from sensor_msgs.msg import CameraInfo
 from sensor_msgs.msg import PointCloud2
 
 import message_filters as mf
+
+import tf2_ros
+from tf2_sensor_msgs.tf2_sensor_msgs import do_transform_cloud
+
 
 CLS =  {0: {'class': 'person',     'color': [255,   0,   0]},
         1: {'class': 'bicycle',    'color': [  0, 255,   0]},
@@ -70,6 +76,8 @@ class DriveSceneParser:
         
         # self.listener = tf.TransformListener()
         
+        self.tf2_buffer = tf2_ros.Buffer()
+        self.listener = tf2_ros.TransformListener(self.tf2_buffer)
         self.ts.registerCallback(self.callback)
                 
     def to_numpy(self, msg, type='gray'):
@@ -79,9 +87,7 @@ class DriveSceneParser:
         
         if img.shape[-1] == 4:
             img = img[:, :, :-1]
-        
         img = cv2.resize(img, self.size[::-1])
-        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         return img
     
     def xywh2xyxy(self, x):
@@ -108,16 +114,36 @@ class DriveSceneParser:
         for i, callback in enumerate(self.callbacks):
             callback(args[i])
             
-        img = np.zeros((*self.size, 3)).astype(np.uint8)
+        img = np.zeros((self.size[0], self.size[1], 3)).astype(np.uint8)
         
         if self.sub_freespace is not None:
-            pass
+            try:
+                trans = self.tf2_buffer.lookup_transform(self.freespace_msg.header.frame_id, self.lane_msg.header.frame_id, rospy.Time(0))
+            except:
+                rospy.logwarn('retrieving tf...')
+                return
+            
+            msg = do_transform_cloud(self.freespace_msg, trans)
+            
+            xyz = ros_numpy.point_cloud2.pointcloud2_to_xyz_array(msg)
+            uvw = np.matmul(np.concatenate([xyz, np.ones((xyz.shape[0], 1))], axis=1), np.reshape(self.info.P, (3, 4)).T)
+            uv = uvw[:, :2] / uvw[:, -1:]
+            uv = uv.astype(int)
+            uv = uv[(uv[:, 0] > 0) & (uv[:, 1] > 0) & (uv[:, 0] < self.size[0]) & (uv[:, 1] < self.size[1])]
+            mask = np.zeros(self.size).astype(np.uint8)
+            np.put(mask, uv, 1)
+            
+            # rospy.logwarn(xyz)
+            rospy.logwarn(uv.shape)
+            
+            img[mask] = 255
+            
             
         if self.sub_lane is not None:
             msg = self.to_numpy(self.lane_msg)
             if msg is None:
-                msg = np.zeros((*self.size, 3)).astype(np.uint8)
-            img[msg[:, :, 0] > 128] = 255
+                msg = np.zeros(self.size).astype(np.uint8)
+            img[msg > 128] = 255
         
         if self.sub_object is not None:
             dets = []
@@ -130,8 +156,10 @@ class DriveSceneParser:
             
             for det in dets:
                 det = [int(i) for i in det]
-                img = cv2.rectangle(img, det[:2], det[2:4], CLS[det[-1]]['color'], -1)
+                img = cv2.rectangle(img, tuple(det[:2]), tuple(det[2:4]), CLS[det[-1]]['color'], -1)
                 
+        rospy.logwarn(img.shape)
+        
         msg = self.bridge.cv2_to_imgmsg(img)
         msg.header.frame_id = self.frame_id
         msg.header.stamp = now
@@ -151,7 +179,7 @@ if __name__ == '__main__':
     result_topic      = rospy.get_param('~result_topic',      '/image_parsed')
     frame_id          = rospy.get_param('~frame_id',          'camera1')
     
-    camera_param = yaml.load(open(os.path.join(rospkg.RosPack().get_path('drive_scene_parser'), 'param', 'camera_param.yaml')), yaml.FullLoader)
+    camera_param = yaml.load(open(os.path.join(rospkg.RosPack().get_path('drive_scene_parser'), 'param', 'camera_param.yaml')))
     publisher = DriveSceneParser(camera_param, (image_height, image_width), publish_rate, result_topic, frame_id, object_topic, lane_topic, freespace_topic)
     # publisher.callback()
     

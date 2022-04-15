@@ -20,7 +20,7 @@ sudo apt install python-pip
 
 pip3 install --upgrade pip
 pip3 install torch==1.10.1+cu111 torchvision==0.11.2+cu111 -f https://download.pytorch.org/whl/torch_stable.html
-pip3 install src/requirements.txt
+pip3 install -r src/requirements.txt
 ```
 
 ## build package

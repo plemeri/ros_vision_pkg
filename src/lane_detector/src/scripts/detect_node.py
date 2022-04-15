@@ -5,6 +5,7 @@ import argparse
 import tqdm
 import sys
 import cv2
+import gdown
 
 import numpy as np
 # from torch2trt import torch2trt
@@ -47,9 +48,14 @@ class LaneSOD:
         self.opt = load_config(config)
         
         self.model = eval(self.opt.Model.name)(depth=self.opt.Model.depth, pretrained=False, base_size=self.opt.Train.Dataset.transforms.resize.size)
-        self.model.load_state_dict(torch.load(os.path.join(
-            rospkg.RosPack().get_path('lane_detector'), 'scripts',
-            self.opt.Test.Checkpoint.checkpoint_dir, 'latest.pth'), map_location=torch.device('cpu')), strict=True)
+        
+        ckpt_dir = os.path.join(rospkg.RosPack().get_path('lane_detector'), 'scripts', self.opt.Test.Checkpoint.checkpoint_dir, 'latest.pth')
+        if os.path.isfile(ckpt_dir) is False:
+            url = https://drive.google.com/file/d/1DONSeQ43PwAnW-Eehpvo5UaRAJP4mhZy/view?usp=sharing
+            gdown.download(url, ckpt_dir)
+            
+        
+        self.model.load_state_dict(torch.load(ckpt_dir, map_location=torch.device('cpu')), strict=True)
 
         self.model.cuda()
         self.model.eval()

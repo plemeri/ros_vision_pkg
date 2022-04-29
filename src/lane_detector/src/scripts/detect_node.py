@@ -51,7 +51,7 @@ class LaneSOD:
         
         ckpt_dir = os.path.join(rospkg.RosPack().get_path('lane_detector'), 'scripts', self.opt.Test.Checkpoint.checkpoint_dir, 'latest.pth')
         if os.path.isfile(ckpt_dir) is False:
-            url = https://drive.google.com/file/d/1DONSeQ43PwAnW-Eehpvo5UaRAJP4mhZy/view?usp=sharing
+            url = 'https://drive.google.com/file/d/1DONSeQ43PwAnW-Eehpvo5UaRAJP4mhZy/view?usp=sharing'
             gdown.download(url, ckpt_dir)
             
         

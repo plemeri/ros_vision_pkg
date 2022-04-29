@@ -22,7 +22,7 @@ Free space is marked in red.
 
 ```bash
 cd ~/your_workspace/src
-git clone https://github.com/Livox-SDK/livox_free_space
+git clone https://github.com/Livox-SDK/freespace_detector
 cd ..
 catkin_make
 ```
@@ -37,7 +37,7 @@ rosbag play your.bag
 ```
 cd ~/your_workspace
 source devel/setup.bash
-roslaunch livox_free_space livox_free_space.launch
+roslaunch freespace_detector freespace_detector.launch
 ```
 
 ## Run with your device:
@@ -55,7 +55,7 @@ catkin_make
 - Run the launch file:
 ```
 source devel/setup.bash
-roslaunch livox_free_space livox_free_space.launch
+roslaunch freespace_detector freespace_detector.launch
 ```
 
 ## Notes

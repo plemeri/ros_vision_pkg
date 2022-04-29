@@ -2,15 +2,24 @@
 
     <arg name = "height_offset"    default="1.8"/>
     <arg name = "pointcloud_topic" default="/points_raw"/>
-    <arg name = "result_topic" default="/points_freespace"/>
+    <arg name = "result_topic" default="/points_ground"/>
+    <arg name = "vis_topic" default="/marker_ground"/>
+    <arg name = "sample_rate" default="1.0"/>
 
-    <node pkg="livox_free_space" name="livox_free_space" type="livox_free_space_node" output="screen"/>
+    <node pkg="freespace_detector" name="freespace_detector" type="freespace_detector_node" output="screen"/>
         <param name = "height_offset"    type="double" value="$(arg height_offset)"/>
-        <param name = "pointcloud_topic" type="str" value="$(arg pointcloud_topic)"/>
-        <param name = "result_topic" type="str"    value="$(arg result_topic)"/>
+        <param name = "pointcloud_topic" type="str"    value="$(arg pointcloud_topic)"/>
+        <param name = "result_topic"     type="str"    value="$(arg result_topic)"/>
+
+    <node name="freespace_parser" pkg="freespace_detector" type="livox_parser.py">
+        <param name ="height_offset"   type="double" value="$(arg height_offset)"/>
+        <param name ="freespace_topic" type="str"    value="$(arg result_topic)" />
+        <param name ="result_topic"    type="str"    value="$(arg vis_topic)" />
+        <param name ="sample_rate"     type="double" value="$(arg sample_rate)" />
+    </node>
 
 </launch>
 
-<!-- <node name="rviz" pkg="rviz" type="rviz" args="-d $(find livox_free_space)/fs.rviz" /> -->
+<!-- <node name="rviz" pkg="rviz" type="rviz" args="-d $(find freespace_detector)/fs.rviz" /> -->
 <!-- launch-prefix="gdb -ex run - -args" -->
 

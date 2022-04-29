@@ -47,15 +47,17 @@ def no_ground_to_ring(msg, max_dist, sample_rate):
 if __name__ == '__main__':
     rospy.init_node('points_ring', anonymous=True)
 
-    topic_name = rospy.get_param('~topic')
-    max_dist = rospy.get_param('~max_dist')
-    sample_rate = rospy.get_param('~sample_rate')
+    input_topic_name =      rospy.get_param('~input_topic')
+    output_topic_name =     rospy.get_param('~output_topic')
+    output_vis_topic_name = rospy.get_param('~output_vis_topic')
+    max_dist =              rospy.get_param('~max_dist')
+    sample_rate =           rospy.get_param('~sample_rate')
 
     # publishers
-    pub_points = rospy.Publisher('/points_ring', PointCloud2, queue_size=10)
-    pub_arr = rospy.Publisher('numpy_ring', numpy_msg(Floats), queue_size=10)
+    pub_points = rospy.Publisher(output_vis_topic_name, PointCloud2, queue_size=10)
+    pub_arr =    rospy.Publisher(output_topic_name, numpy_msg(Floats), queue_size=10)
 
     # subscribers
-    sub_points = rospy.Subscriber(topic_name, PointCloud2,
+    sub_points = rospy.Subscriber(input_topic_name, PointCloud2,
                                   lambda msg: no_ground_to_ring(msg, max_dist, sample_rate))
     rospy.spin()

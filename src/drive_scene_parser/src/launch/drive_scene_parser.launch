@@ -1,8 +1,7 @@
 
 
 <launch>
-    <arg name="image_height"      default="480" />
-    <arg name="image_width"       default="640" />
+    <arg name="camera_info_topic" default="/camera1/camera_info" />
     <arg name="object_topic"      default="/camera1/detected_objects" />
     <arg name="lane_topic"        default="/camera1/detected_lanes" />
     <arg name="freespace_topic"   default="" />
@@ -10,8 +9,7 @@
     <arg name="frame_id"          default="camera1" />
     
     <node name="drive_scene_parser" pkg="drive_scene_parser" type="drive_scene_parser.py">
-        <param name="image_height"      type="int" value="$(arg image_height)" />
-        <param name="image_width"       type="int" value="$(arg image_width)" />
+        <param name="camera_info_topic" type="str" value="$(arg camera_info_topic)" />
         <param name="object_topic"      type="str" value="$(arg object_topic)" />
         <param name="lane_topic"        type="str" value="$(arg lane_topic)" />
         <param name="freespace_topic"   type="str" value="$(arg freespace_topic)" />

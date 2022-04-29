@@ -24,7 +24,7 @@ ros::Publisher fs_pub;
 // ros::Publisher fs_distance_circle_pub; 
 // ros::Publisher fs_distance_text_pub;
 
-LivoxFreeSpace livox_free_space;
+LivoxFreeSpace freespace_detector;
 
 std::vector<sensor_msgs::PointCloud2ConstPtr> recieved_pc_msgs;
 sensor_msgs::PointCloud2ConstPtr this_pc_msg;
@@ -149,7 +149,7 @@ void GenerateFreeSpace(pcl::PointCloud<pcl::PointXYZI> & pc)
         data[p*4+2] = pc.points[p].z;
         data[p*4+3] = pc.points[p].intensity;
     }       
-    livox_free_space.GenerateFreeSpace(data, dnum, free_space);
+    freespace_detector.GenerateFreeSpace(data, dnum, free_space);
     t1 = clock();
 
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZRGB>);

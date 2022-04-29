@@ -1,7 +1,15 @@
 <launch>
-    <node name="points_ring" pkg="points_ring" type="points_ring.py" clear_params="true">
-        <param name="topic" value="/points_no_ground" />
-        <param name="max_dist" value="50" />
-        <param name="sample_rate" value="1" />
+    <arg name="input_topic"       default="/points_no_ground" />
+    <arg name="output_topic"      default="/points_ring" />
+    <arg name="output_vis_topic"  default="/numpy_ring" />
+    <arg name="max_dist"          default="50" />
+    <arg name="sample_rate"       default="1" />
+
+    <node name="points_ring" pkg="points_ring" type="points_ring.py">
+        <param name="input_topic"       type="str"    value="$(arg input_topic)" />
+        <param name="output_topic"      type="str"    value="$(arg output_topic)" />
+        <param name="output_vis_topic"  type="str"    value="$(arg output_vis_topic)" />
+        <param name="max_dist"          type="int"    value="$(arg max_dist)" />
+        <param name="sample_rate"       type="int"    value="$(arg sample_rate)" />
     </node>
 </launch>

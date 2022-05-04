@@ -1,13 +1,6 @@
-<!---->
 <launch>
 
-<!-- world to map tf -->
-<node pkg="tf"  type="static_transform_publisher" name="world_to_map" args="0 0 0 0 0 0 /world /map 10" />
-
-<!-- map to mobility tf -->
-<node pkg="tf"  type="static_transform_publisher" name="map_to_mobility" args="0 0 0 0 0 0 /map /mobility 10" />
-
-<!-- map to fr0 tf -->
-<node pkg="tf"  type="static_transform_publisher" name="velodyne_to_Fr1A" args="-2.5 0 -3 0 0 0 /velodyne /Fr1A 10" />
+<node pkg="tf"  type="static_transform_publisher" name="ouster_to_base_link"  args="0 0 1.7 0 0 0 1 /base_link /os_sensor 10" />
+<node pkg="tf"  type="static_transform_publisher" name="camera2_to_base_link" args="0.6 0 1.4 -1.57 0.0 -1.57 /base_link /camera2 10" />
 
 </launch>

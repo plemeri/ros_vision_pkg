@@ -78,8 +78,9 @@ if __name__ == '__main__':
     image_width       = rospy.get_param('~image_width' ,      640)
     publish_rate      = rospy.get_param('~publish_rate' ,     30)
     image_topic       = rospy.get_param('~image_topic',       'camera1')
+    camera_param      = rospy.get_param('~camera_param',      'camera_param.yaml')
 
-    camera_param = yaml.load(open(os.path.join(rospkg.RosPack().get_path('camera_publisher'), 'param', 'camera_param.yaml')), yaml.FullLoader)
+    camera_param = yaml.load(open(os.path.join(rospkg.RosPack().get_path('camera_publisher'), 'param', camera_param)), yaml.FullLoader)
     
     publisher = CameraPublisher(camera_id, camera_param, (image_height, image_width), publish_rate, image_topic)
     publisher.callback()

@@ -35,7 +35,7 @@ CLS =  {0: {'class': 'person',     'color': [220, 20, 60]},
         7: {'class': 'truck',      'color': [  0,  0, 70]}
         }
 class DriveSceneParser:
-    def __init__(self, camera_info_topic, result_topic, frame_id, object_topic='', lane_topic='', freespace_topic=''):
+    def __init__(self, camera_info_topic, result_topic, frame_id, object_topic='', lane_topic='', freespace_topic='', mask_img=None):
         self.frame_id = frame_id
         self.info = rospy.wait_for_message(camera_info_topic, CameraInfo)
         self.model = image_geometry.PinholeCameraModel()
@@ -50,6 +50,8 @@ class DriveSceneParser:
         self.sub_object = mf.Subscriber(object_topic, Detection2DArray) if object_topic != '' else None
         self.sub_lane = mf.Subscriber(lane_topic, ImageMsg) if lane_topic != '' else None
         self.sub_freespace = mf.Subscriber(freespace_topic, MarkerArray)  if freespace_topic != '' else None
+        
+        self.mask_img = mask_img
         
         subs = [self.sub_object, self.sub_lane, self.sub_freespace]
         callbacks = [self.callback_object, self.callback_lane, self.callback_freespace]
@@ -96,12 +98,10 @@ class DriveSceneParser:
         
         if len(img.shape) == 2:
             img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
-   
         if img.shape[-1] == 4:
             img = img[:, :, :-1]
         elif img.shape[-1] == 1:
             img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
-           
         return img
     
     def xywh2xyxy(self, x, size):
@@ -134,26 +134,25 @@ class DriveSceneParser:
             freespace = []
             freespace_id = []
             for marker in self.freespace_msg.markers:
-                if (0 <= marker.id < 90) or (270 < marker.id < 360):
+                # if (0 <= marker.id < 90) or (270 < marker.id < 360):
+                if marker.id > 180:
                     point = do_transform_point(PointStamped(point=marker.pose.position), self.trans)
                     # point = PointStamped(point=marker.pose.position)
                     point_projected = self.model.project3dToPixel((point.point.x, point.point.y, point.point.z))
 
-                    if (0 < point_projected[0] < 800) and (0 < point_projected[1] < 600):
+                    if (0 < point_projected[0] < self.info.width) and (0 < point_projected[1] < self.info.height):
                         freespace.append([int(point_projected[0]), int(point_projected[1])])
                         freespace_id.append(marker.id)
                         
-            freespace.extend([[0, 600], [800, 600]])
             freespace = np.array(freespace).astype(np.int32)
             freespace = freespace[freespace.argsort(axis=0)[:, 0]]
-            img = cv2.fillPoly(img, [freespace], (128, 64,128))
+            freespace = np.vstack([[0, self.info.height], freespace, [self.info.width, self.info.height]])
+            img = cv2.fillPoly(img, [freespace], (128, 64, 128))
             
         if self.sub_lane is not None:
             msg = self.to_numpy(self.lane_msg)
             if msg is None:
                 msg = np.zeros((self.lane_msg.height, self.lane_msg.width, 3)).astype(np.uint8)
-                
-            
             img[msg > 128] = 255
         
         if self.sub_object is not None:
@@ -162,12 +161,16 @@ class DriveSceneParser:
                 bbox = det.bbox
                 xyxy = self.xywh2xyxy(np.array([[bbox.center.x, bbox.center.y, bbox.size_x, bbox.size_y]]), (self.info.height, self.info.width)).tolist()[0]
                 id = det.results[0].id
-                xyxy.append(id)
-                dets.append(xyxy)
+                
+                if self.mask_img[int(bbox.center.y * self.info.height), int(bbox.center.x * self.info.width)]:
+                    xyxy.append(id)
+                    dets.append(xyxy)
             
             for det in dets:
                 det = [int(i) for i in det]
                 img = cv2.rectangle(img, tuple(det[:2]), tuple(det[2:4]), CLS[det[-1]]['color'], -1)
+                
+        img[~self.mask_img] = [0, 255, 255]
                 
         msg = self.bridge.cv2_to_imgmsg(img)
         msg.header.frame_id = self.frame_id
@@ -185,6 +188,8 @@ if __name__ == '__main__':
     freespace_topic   = rospy.get_param('~freespace_topic',   '')
     result_topic      = rospy.get_param('~result_topic',      '/image_parsed')
     frame_id          = rospy.get_param('~frame_id',          'camera1')
+    mask_img          = rospy.get_param('~mask_img',          'mask.png')
     
-    publisher = DriveSceneParser(camera_info_topic, result_topic, frame_id, object_topic, lane_topic, freespace_topic)
+    mask_img = cv2.imread(os.path.join(rospkg.RosPack().get_path('drive_scene_parser'), 'mask', mask_img))[:, :, 0] > .5
+    publisher = DriveSceneParser(camera_info_topic, result_topic, frame_id, object_topic, lane_topic, freespace_topic, mask_img)
     rospy.spin()

@@ -1,5 +1,5 @@
 <launch>
-    <arg name="image_topic"         default="/camera2/image" />
+    <arg name="image_topic"         default="/camera2/image_raw" />
     <arg name="info_topic"          default="/camera2/camera_info" />
     <arg name="camera_frame"        default="camera2" />
     <arg name="object_topic"        default="/camera2/detected_objects" />
@@ -22,17 +22,17 @@
         <arg name="result_topic"      value="$(arg lane_topic)"  />
     </include>
 
-    <include file="$(find freespace_detector)/launch/freespace_detector.launch">
+    <include file="$(find freespace_detector)/launch/livox_free_space.launch">
         <arg name="pointcloud_topic"  value="$(arg point_topic)" />
         <arg name="result_topic"      value="$(arg freespace_topic)" />
-        <arg name="vis_topic"      value="$(arg freespace_vis_topic)" />
+        <arg name="vis_topic"         value="$(arg freespace_vis_topic)" />
     </include>
 
     <include file="$(find drive_scene_parser)/launch/drive_scene_parser.launch">
         <arg name="camera_info_topic" value="$(arg info_topic)" />
         <arg name="object_topic"      value="$(arg object_topic)" />
         <arg name="lane_topic"        value="$(arg lane_topic)"   />
-        <arg name="freespace_topic"   value="$(arg freespace_topic)"   />
+        <arg name="freespace_topic"   value="$(arg freespace_vis_topic)"   />
         <arg name="result_topic"      value="$(arg result_topic)" />
         <arg name="frame_id"          value="$(arg camera_frame)"     />
     </include>

@@ -7,7 +7,7 @@
     <arg name="lane_topic"          default="/camera0/detected_lanes"   />
     <arg name="result_topic"        default="/camera0/image_parsed"   />
     <arg name="lidar_frame"         default="os_sensor" />
-    <arg name="point_topic"         default="/os_cloud_node/points" />
+    <arg name="point_topic"         default="/os_cloud_node/points_sync" />
     <arg name="freespace_topic"     default="/os_cloud_node/freespace" />
     <arg name="freespace_vis_topic" default="/os_cloud_node/freespace_vis" />
 

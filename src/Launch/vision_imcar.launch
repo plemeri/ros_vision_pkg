@@ -1,15 +1,18 @@
 <launch>
-    <arg name="image_topic"         default="/camera2/image_raw" />
-    <arg name="info_topic"          default="/camera2/camera_info" />
-    <arg name="camera_frame"        default="camera2" />
-    <arg name="object_topic"        default="/camera2/detected_objects" />
-    <arg name="object_vis_topic"    default="/camera2/image_objects" />
-    <arg name="lane_topic"          default="/camera2/detected_lanes"   />
-    <arg name="result_topic"        default="/camera2/image_parsed"   />
+    <arg name="image_topic"         default="/camera0/image_raw" />
+    <arg name="info_topic"          default="/camera0/camera_info" />
+    <arg name="camera_frame"        default="camera0" />
+    <arg name="object_topic"        default="/camera0/detected_objects" />
+    <arg name="object_vis_topic"    default="/camera0/image_objects" />
+    <arg name="lane_topic"          default="/camera0/detected_lanes"   />
+    <arg name="result_topic"        default="/camera0/image_parsed"   />
     <arg name="lidar_frame"         default="os_sensor" />
     <arg name="point_topic"         default="/os_cloud_node/points" />
     <arg name="freespace_topic"     default="/os_cloud_node/freespace" />
     <arg name="freespace_vis_topic" default="/os_cloud_node/freespace_vis" />
+
+    <node pkg="tf"  type="static_transform_publisher" name="ouster_to_base_link"  args="0 0 1.7 0 0 0 1 /base_link /os_sensor 10" />
+    <node pkg="tf"  type="static_transform_publisher" name="camera2_to_base_link" args="-0.7 0.3 1.4 -1.57 0.0 -1.57 /base_link /camera0 10" />
 
     <include file="$(find object_detector)/launch/object_detector.launch">
         <arg name="input_image_topic"  value="$(arg image_topic)"  />

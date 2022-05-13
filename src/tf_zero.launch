@@ -1,6 +1,0 @@
-<launch>
-
-<node pkg="tf"  type="static_transform_publisher" name="ouster_to_base_link"  args="0 0 1.7 0 0 0 1 /base_link /os_sensor 10" />
-<node pkg="tf"  type="static_transform_publisher" name="camera2_to_base_link" args="0.6 0 1.4 -1.47 0.0 -1.67 /base_link /camera2 10" />
-
-</launch>

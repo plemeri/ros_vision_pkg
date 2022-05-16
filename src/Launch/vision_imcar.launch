@@ -38,6 +38,7 @@
         <arg name="freespace_topic"   value="$(arg freespace_vis_topic)"   />
         <arg name="result_topic"      value="$(arg result_topic)" />
         <arg name="frame_id"          value="$(arg camera_frame)"     />
+        <arg name="mask_img"          value="mask.png"     />
     </include>
 
 

@@ -162,7 +162,7 @@ class DriveSceneParser:
                 xyxy = self.xywh2xyxy(np.array([[bbox.center.x, bbox.center.y, bbox.size_x, bbox.size_y]]), (self.info.height, self.info.width)).tolist()[0]
                 id = det.results[0].id
                 
-                if self.mask_img[int(bbox.center.y * self.info.height), int(bbox.center.x * self.info.width)]:
+                if self.mask_img is not None and self.mask_img[int(bbox.center.y * self.info.height), int(bbox.center.x * self.info.width)]:
                     xyxy.append(id)
                     dets.append(xyxy)
             
@@ -170,7 +170,8 @@ class DriveSceneParser:
                 det = [int(i) for i in det]
                 img = cv2.rectangle(img, tuple(det[:2]), tuple(det[2:4]), CLS[det[-1]]['color'], -1)
                 
-        img[~self.mask_img] = [0, 255, 255]
+        if self.mask_img is not None:
+            img[~self.mask_img] = [0, 255, 255]
                 
         msg = self.bridge.cv2_to_imgmsg(img)
         msg.header.frame_id = self.frame_id
@@ -188,8 +189,12 @@ if __name__ == '__main__':
     freespace_topic   = rospy.get_param('~freespace_topic',   '')
     result_topic      = rospy.get_param('~result_topic',      '/image_parsed')
     frame_id          = rospy.get_param('~frame_id',          'camera1')
-    mask_img          = rospy.get_param('~mask_img',          'mask.png')
+    mask_img          = rospy.get_param('~mask_img',          '')
     
-    mask_img = cv2.imread(os.path.join(rospkg.RosPack().get_path('drive_scene_parser'), 'mask', mask_img))[:, :, 0] > .5
+    if mask_img != '':
+        mask_img = cv2.imread(os.path.join(rospkg.RosPack().get_path('drive_scene_parser'), 'mask', mask_img))[:, :, 0] > .5
+    else:
+        mask_img = None
+        
     publisher = DriveSceneParser(camera_info_topic, result_topic, frame_id, object_topic, lane_topic, freespace_topic, mask_img)
     rospy.spin()

@@ -1,5 +1,0 @@
-#setup.py bdist_wheel for opencv-python
-
-rospkg
-scikit-build
-opencv-python

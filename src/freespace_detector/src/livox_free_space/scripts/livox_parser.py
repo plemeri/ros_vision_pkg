@@ -80,7 +80,7 @@ class LivoxParser:
         return 0
 
 if __name__ == '__main__':
-    rospy.init_node('drive_scene_parser')
+    rospy.init_node('livox_parser')
     height_offset       = rospy.get_param('~height_offset',       '1.8')
     sample_rate       = rospy.get_param('~sample_rate',       '1.0')
     freespace_topic   = rospy.get_param('~freespace_topic',   '/points_ground')

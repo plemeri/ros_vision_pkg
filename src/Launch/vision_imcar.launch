@@ -32,10 +32,11 @@
     </include>
 
     <include file="$(find drive_scene_parser)/launch/drive_scene_parser.launch">
+        <arg name="camera_topic"      value="$(arg image_topic)" />
         <arg name="camera_info_topic" value="$(arg info_topic)" />
         <arg name="object_topic"      value="$(arg object_topic)" />
         <arg name="lane_topic"        value="$(arg lane_topic)"   />
-        <arg name="freespace_topic"   value="$(arg freespace_vis_topic)"   />
+        <arg name="freespace_topic"   value=""                    />
         <arg name="result_topic"      value="$(arg result_topic)" />
         <arg name="frame_id"          value="$(arg camera_frame)"     />
         <arg name="mask_img"          value="mask.png"     />

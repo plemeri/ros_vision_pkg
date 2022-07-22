@@ -1,6 +1,7 @@
 
 
 <launch>
+    <arg name="camera_topic"      default="/camera1/image_raw" />
     <arg name="camera_info_topic" default="/camera1/camera_info" />
     <arg name="object_topic"      default="/camera1/detected_objects" />
     <arg name="lane_topic"        default="/camera1/detected_lanes" />
@@ -10,6 +11,7 @@
     <arg name="mask_img"          default="" />
     
     <node name="drive_scene_parser" pkg="drive_scene_parser" type="drive_scene_parser.py">
+        <param name="camera_topic"      type="str" value="$(arg camera_topic)" />
         <param name="camera_info_topic" type="str" value="$(arg camera_info_topic)" />
         <param name="object_topic"      type="str" value="$(arg object_topic)" />
         <param name="lane_topic"        type="str" value="$(arg lane_topic)" />

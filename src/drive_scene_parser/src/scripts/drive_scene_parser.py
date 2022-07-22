@@ -27,15 +27,23 @@ from tf2_geometry_msgs.tf2_geometry_msgs import do_transform_point
 
 import image_geometry
 
+# CLS =  {0: {'class': 'person',     'color': [220, 20, 60]},
+#         1: {'class': 'bicycle',    'color': [119, 11, 32]},
+#         2: {'class': 'car',        'color': [  0,  0,142]},
+#         3: {'class': 'motorcycle', 'color': [  0,  0,230]},
+#         5: {'class': 'bus',        'color': [  0, 60,100]},
+#         7: {'class': 'truck',      'color': [  0,  0, 70]}
+#         }
+
 CLS =  {0: {'class': 'person',     'color': [220, 20, 60]},
-        1: {'class': 'bicycle',    'color': [119, 11, 32]},
+        1: {'class': 'bicycle',    'color': [220, 20, 60]},
         2: {'class': 'car',        'color': [  0,  0,142]},
-        3: {'class': 'motorcycle', 'color': [  0,  0,230]},
-        5: {'class': 'bus',        'color': [  0, 60,100]},
-        7: {'class': 'truck',      'color': [  0,  0, 70]}
+        3: {'class': 'motorcycle', 'color': [220, 20, 60]},
+        5: {'class': 'bus',        'color': [  0,  0,142]},
+        7: {'class': 'truck',      'color': [  0,  0,142]}
         }
 class DriveSceneParser:
-    def __init__(self, camera_info_topic, result_topic, frame_id, object_topic='', lane_topic='', freespace_topic='', mask_img=None):
+    def __init__(self, camera_topic, camera_info_topic, result_topic, frame_id, object_topic='', lane_topic='', freespace_topic='', mask_img=None):
         self.frame_id = frame_id
         self.info = rospy.wait_for_message(camera_info_topic, CameraInfo)
         self.model = image_geometry.PinholeCameraModel()
@@ -47,14 +55,15 @@ class DriveSceneParser:
         
         self.pub1 = rospy.Publisher(result_topic, ImageMsg, queue_size=10)
         
+        self.sub_camera = mf.Subscriber(camera_topic, ImageMsg) if camera_topic != '' else None
         self.sub_object = mf.Subscriber(object_topic, Detection2DArray) if object_topic != '' else None
         self.sub_lane = mf.Subscriber(lane_topic, ImageMsg) if lane_topic != '' else None
         self.sub_freespace = mf.Subscriber(freespace_topic, MarkerArray)  if freespace_topic != '' else None
         
         self.mask_img = mask_img
         
-        subs = [self.sub_object, self.sub_lane, self.sub_freespace]
-        callbacks = [self.callback_object, self.callback_lane, self.callback_freespace]
+        subs = [self.sub_camera, self.sub_object, self.sub_lane, self.sub_freespace]
+        callbacks = [self.callback_camera, self.callback_object, self.callback_lane, self.callback_freespace]
 
         self.subs = []
         self.callbacks = []
@@ -113,6 +122,9 @@ class DriveSceneParser:
         y[:, 3] = int((x[:, 1] + x[:, 3] / 2) * size[0])  # bottom right y
         return y
 
+    def callback_camera(self, camera_msg):
+        self.camera_msg = camera_msg
+
     def callback_object(self, object_msg):
         self.object_msg = object_msg
         
@@ -128,7 +140,10 @@ class DriveSceneParser:
         for i, callback in enumerate(self.callbacks):
             callback(args[i])
             
-        img = np.zeros((self.info.height, self.info.width, 3)).astype(np.uint8)
+        if self.sub_camera is not None:
+            img = self.to_numpy(self.camera_msg).copy()
+        else:
+            img = np.zeros((self.info.height, self.info.width, 3)).astype(np.uint8)
         
         if self.sub_freespace is not None:
             freespace = []
@@ -170,7 +185,7 @@ class DriveSceneParser:
                 det = [int(i) for i in det]
                 img = cv2.rectangle(img, tuple(det[:2]), tuple(det[2:4]), CLS[det[-1]]['color'], -1)
                 
-        if self.mask_img is not None:
+        if self.mask_img is not None and self.sub_camera is None:
             img[~self.mask_img] = [0, 255, 255]
                 
         msg = self.bridge.cv2_to_imgmsg(img)
@@ -183,6 +198,7 @@ class DriveSceneParser:
 
 if __name__ == '__main__':
     rospy.init_node('drive_scene_parser')
+    camera_topic      = rospy.get_param('~camera_topic',      '')
     camera_info_topic = rospy.get_param('~camera_info_topic', '')
     object_topic      = rospy.get_param('~object_topic',      '')
     lane_topic        = rospy.get_param('~lane_topic',        '')
@@ -196,5 +212,5 @@ if __name__ == '__main__':
     else:
         mask_img = None
         
-    publisher = DriveSceneParser(camera_info_topic, result_topic, frame_id, object_topic, lane_topic, freespace_topic, mask_img)
+    publisher = DriveSceneParser(camera_topic, camera_info_topic, result_topic, frame_id, object_topic, lane_topic, freespace_topic, mask_img)
     rospy.spin()

@@ -13,8 +13,9 @@
     <arg name="classes"            default="[0, 1, 2, 3, 5, 7]" />
     <arg name="half"               default="False" />
     <arg name="dnn"                default="False" />
+    <arg name="name"               default="yolo" />
 
-    <node name="object_detector" pkg="object_detector" type="detect_node.py">
+    <node name="object_detector_$(arg name)" pkg="object_detector" type="detect_node.py">
         <param name="weights"            type="str"    value="$(arg weights)" />
         <param name="data"               type="str"    value="$(arg data)" />
         <param name="input_image_topic"  type="str"    value="$(arg input_image_topic)" />

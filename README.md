@@ -73,6 +73,10 @@ source devel/setup.bash
     #!/home/taehoon1018/anaconda3/envs/yolov5/bin/python3 --> [your python path]
     ```
 
++ checkpoints
+[yolov5l](https://postechackr-my.sharepoint.com/:u:/g/personal/taehoon1018_postech_ac_kr/EYXI2gekiQRFsDtkeR7Z6yUBA1OjXCLD4zbApdv6In-cDw?e=RaMBpa)
+[traffic_sign](https://postechackr-my.sharepoint.com/:u:/g/personal/taehoon1018_postech_ac_kr/EfyxOJKmXDVBuLQjuhuhz30BR1j1e9ZWUnCXkwNJgPTnCw?e=4BTbYX)
+
 ## drive_scene_parser
 
 1. change file permission

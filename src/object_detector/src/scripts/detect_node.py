@@ -2,6 +2,7 @@
 
 import argparse
 import os
+import random
 import sys
 from pathlib import Path
 from unittest import result
@@ -138,7 +139,7 @@ class ObjectDetector:
 
 
 if __name__ == "__main__":
-    rospy.init_node('object_detector')
+    rospy.init_node('object_detector') # + str(random.randint(0, 100)))
     weights =          rospy.get_param('~weights',            'yolov5l.pt')
     data =             rospy.get_param('~data',               'data/coco128.yaml')
     image_topic =      rospy.get_param('~input_image_topic',  '/camera1/image_raw')
@@ -154,10 +155,10 @@ if __name__ == "__main__":
     half =             rospy.get_param('~half',               False)
     dnn =              rospy.get_param('~dnn',                False)
     
-    weights = os.path.join(rospkg.RosPack().get_path('object_detector'), 'scripts', weights)
+    weights = [os.path.join(rospkg.RosPack().get_path('object_detector'), 'scripts', weight) for weight in weights.split(' ')] 
     data =    os.path.join(rospkg.RosPack().get_path('object_detector'), 'scripts', data)
     
-    classes = [int(i) for i in classes[1:-1].split(',')]
+    classes = [int(i) for i in classes[1:-1].split(',')] if classes != '' else None
     
     check_requirements(exclude=('tensorboard', 'thop'))
     detector = ObjectDetector(weights, data, image_topic, result_topic, detection_topic, (image_height, image_width), conf, iou, max, device, classes, half, dnn)

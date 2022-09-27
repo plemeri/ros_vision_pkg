@@ -10,7 +10,7 @@
     <arg name="frame_id"          default="camera1" />
     <arg name="mask_img"          default="" />
     
-    <node name="drive_scene_parser" pkg="drive_scene_parser" type="drive_scene_parser.py">
+    <node name="drive_scene_parser_$(arg frame_id)" pkg="drive_scene_parser" type="drive_scene_parser.py">
         <param name="camera_topic"      type="str" value="$(arg camera_topic)" />
         <param name="camera_info_topic" type="str" value="$(arg camera_info_topic)" />
         <param name="object_topic"      type="str" value="$(arg object_topic)" />

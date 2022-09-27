@@ -10,6 +10,7 @@ import yaml
 import image_geometry
 import ros_numpy
 
+
 from cv_bridge import CvBridge
 from std_msgs.msg import String, Header
 from vision_msgs.msg import Detection2DArray, Detection2D, BoundingBox2D, ObjectHypothesisWithPose
@@ -35,6 +36,7 @@ import image_geometry
 #         7: {'class': 'truck',      'color': [  0,  0, 70]}
 #         }
 
+
 CLS =  {0: {'class': 'person',     'color': [220, 20, 60]},
         1: {'class': 'bicycle',    'color': [220, 20, 60]},
         2: {'class': 'car',        'color': [  0,  0,142]},
@@ -54,6 +56,7 @@ class DriveSceneParser:
         self.freespace_msg = MarkerArray()
         
         self.pub1 = rospy.Publisher(result_topic, ImageMsg, queue_size=10)
+        self.pub2 = rospy.Publisher(object_topic + '_with_distance', Detection2DArray, queue_size=10)
         
         self.sub_camera = mf.Subscriber(camera_topic, ImageMsg) if camera_topic != '' else None
         self.sub_object = mf.Subscriber(object_topic, Detection2DArray) if object_topic != '' else None
@@ -85,7 +88,7 @@ class DriveSceneParser:
             while not rospy.is_shutdown():
                 try:
                     source_frame = rospy.wait_for_message(freespace_topic, MarkerArray).markers[0].header.frame_id
-                    target_frame = rospy.wait_for_message(lane_topic, ImageMsg).header.frame_id
+                    target_frame = rospy.wait_for_message(camera_topic, ImageMsg).header.frame_id
                     
                     self.trans = self.tf2_buffer.lookup_transform(target_frame, source_frame, rospy.Time(0))
                     rospy.logwarn('tf retrieved')
@@ -145,6 +148,8 @@ class DriveSceneParser:
         else:
             img = np.zeros((self.info.height, self.info.width, 3)).astype(np.uint8)
         
+        freespace_dist = []
+        freespace_coord = []
         if self.sub_freespace is not None:
             freespace = []
             freespace_id = []
@@ -158,11 +163,16 @@ class DriveSceneParser:
                     if (0 < point_projected[0] < self.info.width) and (0 < point_projected[1] < self.info.height):
                         freespace.append([int(point_projected[0]), int(point_projected[1])])
                         freespace_id.append(marker.id)
+                        freespace_dist.append(np.sqrt(point.point.x ** 2 + point.point.y ** 2 + point.point.z ** 2))
+                        freespace_coord.append([int(point_projected[0]), int(point_projected[1])])
                         
             freespace = np.array(freespace).astype(np.int32)
             freespace = freespace[freespace.argsort(axis=0)[:, 0]]
             freespace = np.vstack([[0, self.info.height], freespace, [self.info.width, self.info.height]])
-            img = cv2.fillPoly(img, [freespace], (128, 64, 128))
+            # img = cv2.fillPoly(img, [freespace], (128, 64, 128))
+            
+            freespace_coord = np.array(freespace_coord)
+        
             
         if self.sub_lane is not None:
             msg = self.to_numpy(self.lane_msg)
@@ -172,6 +182,8 @@ class DriveSceneParser:
         
         if self.sub_object is not None:
             dets = []
+            forward_det_msg = Detection2DArray()
+            forward_det_msg.header = self.object_msg.header
             for det in self.object_msg.detections:
                 bbox = det.bbox
                 xyxy = self.xywh2xyxy(np.array([[bbox.center.x, bbox.center.y, bbox.size_x, bbox.size_y]]), (self.info.height, self.info.width)).tolist()[0]
@@ -180,10 +192,25 @@ class DriveSceneParser:
                 if self.mask_img is not None and self.mask_img[int(bbox.center.y * self.info.height), int(bbox.center.x * self.info.width)]:
                     xyxy.append(id)
                     dets.append(xyxy)
+                    
+                    forward_det_msg.detections.append(det)
             
-            for det in dets:
+            for idx, det in enumerate(dets):
                 det = [int(i) for i in det]
+                bottom_center = [int((det[0] + det[2]) / 2), det[3]]
+                
                 img = cv2.rectangle(img, tuple(det[:2]), tuple(det[2:4]), CLS[det[-1]]['color'], -1)
+                
+                closest_point = np.argmin(np.abs(freespace_coord[:, 0] - bottom_center[0]))
+                if np.linalg.norm(freespace_coord[closest_point] - bottom_center) > 25:
+                    dist = -1
+                else:
+                    dist = freespace_dist[closest_point]
+                    
+                forward_det_msg.detections[idx].results[0].score = dist
+                
+                # img = cv2.putText(img, str(int(dist)), tuple(bottom_center), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
+                # img = cv2.putText(img, str(freespace_coord[closest_point]) + str(bottom_center), tuple(bottom_center), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
                 
         if self.mask_img is not None and self.sub_camera is None:
             img[~self.mask_img] = [0, 255, 255]
@@ -192,6 +219,7 @@ class DriveSceneParser:
         msg.header.frame_id = self.frame_id
         msg.header.stamp = now
         self.pub1.publish(msg)
+        self.pub2.publish(forward_det_msg)
 
     def __len__(self):
         return 0

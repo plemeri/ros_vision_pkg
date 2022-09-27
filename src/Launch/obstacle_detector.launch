@@ -1,0 +1,42 @@
+<launch>
+    <arg name="base_frame"          default="os_sensor" />
+    <arg name="pointcloud_topic"    default="/os_cloud_node/points" />
+    <arg name="freespace_topic"     default="/os_cloud_node/freespace" />
+    <arg name="freespace_vis_topic" default="/os_cloud_node/freespace_vis" />
+    <arg name="local_max_slope"     default="8" />
+    <arg name="general_max_slope"   default="5" />
+    <arg name="min_point_distance" default="1.85" /> 
+    
+
+    <include file="$(find points_preprocessor)/launch/ray_ground_filter.launch">
+        <arg name="base_frame"            value="$(arg base_frame)" />
+        <arg name="input_point_topic"     value="$(arg pointcloud_topic)" />
+        <arg name="no_ground_point_topic" value="/points_no_ground" />
+        <arg name="local_max_slope"       value="$(arg local_max_slope)" />
+        <arg name="general_max_slope"     value="$(arg general_max_slope)" />
+        <arg name="min_point_distance"     value="$(arg min_point_distance)" />
+    </include>
+
+    <include file="$(find points_ring)/launch/points_ring.launch">
+        <arg name="input_topic"       value="/points_no_ground" />
+        <arg name="output_topic"      value="$(arg freespace_topic)" />
+        <arg name="output_vis_topic"  value="$(arg freespace_vis_topic)" />
+    </include>
+
+</launch>
+
+<!-- <launch>
+    <arg name="pointcloud_topic"    default="/os_cloud_node/points" />
+    <arg name="freespace_topic"     default="/os_cloud_node/freespace" />
+    <arg name="freespace_vis_topic" default="/os_cloud_node/freespace_vis" />
+    <arg name="height_offset"       default="1.8" />
+    
+    <include file="$(find freespace_detector)/launch/livox_free_space.launch">
+        <arg name="height_offset"     value="$(arg height_offset)" />
+        <arg name="pointcloud_topic"  value="$(arg pointcloud_topic)" />
+        <arg name="result_topic"      value="$(arg freespace_topic)" />
+        <arg name="vis_topic"         value="$(arg freespace_vis_topic)" />
+    </include>
+
+</launch> -->
+

@@ -12,7 +12,7 @@
     <arg name="freespace_vis_topic" default="/os_cloud_node/freespace_vis" />
 
     <node pkg="tf"  type="static_transform_publisher" name="ouster_to_base_link"  args="0 0 1.7 0 0 0 1 /base_link /$(arg lidar_frame) 10" />
-    <node pkg="tf"  type="static_transform_publisher" name="$(arg camera_frame)_to_base_link" args="-0.0 0.1 1.6 -1.6 0.0 -1.6 /base_link /$(arg camera_frame) 10" />
+    <node pkg="tf"  type="static_transform_publisher" name="$(arg camera_frame)_to_base_link" args="0.0 0.0 1.45 -1.57 0.0 -1.58 /base_link /$(arg camera_frame) 10" />
 
     <include file="$(find object_detector)/launch/object_detector.launch">
         <arg name="name"               value="$(arg camera_frame)"  />

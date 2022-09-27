@@ -10,7 +10,7 @@
     <arg name="freespace_topic"     default="/os_cloud_node/freespace" />
     <arg name="freespace_vis_topic" default="/os_cloud_node/freespace_vis" />
 
-    <node pkg="tf"  type="static_transform_publisher" name="$(arg camera_frame)_to_base_link" args="-0.7 0.0 2.0 -1.2 0.05 -1.57 /base_link /$(arg camera_frame) 10" />
+    <node pkg="tf"  type="static_transform_publisher" name="$(arg camera_frame)_to_camera1" args="-0.3 -0.1 0.0 0.1 -0.3 0.0 /camera1 /$(arg camera_frame) 10" />
 
     <include file="$(find object_detector)/launch/object_detector.launch">
         <!-- <arg name="weights"            value="yolov5s.pt" /> -->

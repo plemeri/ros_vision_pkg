@@ -72,7 +72,7 @@ class ObjectDetector:
         self.det_pubs  = []
         
         for i, (image_topic, detection_topic, result_topic) in enumerate(zip(self.image_topics, self.detection_topics, self.result_topics)):
-            self.subs.append(mf.Subscriber(image_topic, Image))
+            self.subs.append(mf.Subscriber(image_topic, Image, tcp_nodelay=True, queue_size=1, buff_size=2**24))
             self.callbacks.append(lambda x: self.msg_callback(x, idx=i))
             self.det_pubs.append(rospy.Publisher(detection_topic, Detection2DArray, queue_size=10))
             self.res_pubs.append(rospy.Publisher(result_topic, Image, queue_size=10))

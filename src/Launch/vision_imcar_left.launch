@@ -13,7 +13,7 @@
     <node pkg="tf"  type="static_transform_publisher" name="$(arg camera_frame)_to_camera1" args="-0.3 -0.1 0.0 0.1 -0.3 0.0 /camera1 /$(arg camera_frame) 10" />
 
     <include file="$(find object_detector)/launch/object_detector.launch">
-        <!-- <arg name="weights"            value="yolov5s.pt" /> -->
+        <arg name="weights"            value="yolov5s.pt" />
         <arg name="name"               value="$(arg camera_frame)"  />
         <arg name="input_image_topic"  value="$(arg image_topic)"  />
         <arg name="output_image_topic" value="$(arg object_vis_topic)" />

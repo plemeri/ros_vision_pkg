@@ -1,9 +1,9 @@
 <launch>
     <arg name="weights"            default="yolov5l.pt" />
     <arg name="data"               default="data/coco128.yaml" />
-    <arg name="input_image_topic"  default="/camera1/image_raw" />
-    <arg name="output_image_topic" default="/camera1/image_objects" />
-    <arg name="result_topic"       default="/camera1/detected_objects" />
+    <arg name="frames"             default="camera0 camera1 camera2" />
+    <arg name="output_image_topic" default="image_objects" />
+    <arg name="result_topic"       default="detected_objects" />
     <arg name="image_height"       default="480" />
     <arg name="image_width"        default="640" />
     <arg name="conf_thres"         default="0.60" />
@@ -15,10 +15,10 @@
     <arg name="dnn"                default="False" />
     <arg name="name"               default="yolo" />
 
-    <node name="object_detector_$(arg name)" pkg="object_detector" type="detect_node.py">
+    <node name="object_detector_$(arg name)" pkg="object_detector" type="detect_node_multi_topic.py">
         <param name="weights"            type="str"    value="$(arg weights)" />
         <param name="data"               type="str"    value="$(arg data)" />
-        <param name="input_image_topic"  type="str"    value="$(arg input_image_topic)" />
+        <param name="frames"             type="str"    value="$(arg frames)" />
         <param name="output_image_topic" type="str"    value="$(arg output_image_topic)" />
         <param name="result_topic"       type="str"    value="$(arg result_topic)" />
         <param name="image_height"       type="int"    value="$(arg image_height)" />

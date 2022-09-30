@@ -35,10 +35,10 @@
         <arg name="result_topic"       value="/$(arg center_camera_frame)/traffic_sign" />
     </include>
 
-    <include file="$(find lane_detector)/launch/lane_detector.launch">
+    <!-- <include file="$(find lane_detector)/launch/lane_detector.launch">
         <arg name="input_image_topic" value="/$(arg center_camera_frame)/$(arg image_topic)" />
         <arg name="result_topic"      value="/$(arg center_camera_frame)/$(arg lane_topic)"  />
-    </include>
+    </include> -->
 
     <include file="$(find freespace_detector)/launch/livox_free_space.launch">
         <arg name="pointcloud_topic"  value="$(arg point_topic)" />
@@ -50,7 +50,8 @@
         <arg name="camera_topic"      value="/$(arg center_camera_frame)/$(arg image_topic)" />
         <arg name="camera_info_topic" value="/$(arg center_camera_frame)/$(arg info_topic)" />
         <arg name="object_topic"      value="/$(arg center_camera_frame)/$(arg object_topic)" />
-        <arg name="lane_topic"        value="/$(arg center_camera_frame)/$(arg lane_topic)" />
+        <!-- <arg name="lane_topic"        value="/$(arg center_camera_frame)/$(arg lane_topic)" /> -->
+        <arg name="lane_topic"        value="" />
         <arg name="freespace_topic"   value="$(arg freespace_vis_topic)" />
         <arg name="result_topic"      value="/$(arg center_camera_frame)/$(arg result_topic)" />
         <arg name="frame_id"          value="$(arg center_camera_frame)" />

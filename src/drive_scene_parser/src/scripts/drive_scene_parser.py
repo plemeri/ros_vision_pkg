@@ -36,6 +36,7 @@ import image_geometry
 #         7: {'class': 'truck',      'color': [  0,  0, 70]}
 #         }
 
+LARGE_INTEGER = 10000
 
 CLS =  {0: {'class': 'person',     'color': [220, 20, 60]},
         1: {'class': 'bicycle',    'color': [220, 20, 60]},
@@ -166,9 +167,15 @@ class DriveSceneParser:
                         freespace_dist.append(np.sqrt(point.point.x ** 2 + point.point.y ** 2 + point.point.z ** 2))
                         freespace_coord.append([int(point_projected[0]), int(point_projected[1])])
                         
-            freespace = np.array(freespace).astype(np.int32)
-            freespace = freespace[freespace.argsort(axis=0)[:, 0]]
-            freespace = np.vstack([[0, self.info.height], freespace, [self.info.width, self.info.height]])
+            if len(self.freespace_msg.markers) != 0:
+                freespace = np.array(freespace).astype(np.int32)
+                freespace = freespace[freespace.argsort(axis=0)[:, 0]]
+                freespace = np.vstack([[0, self.info.height], freespace, [self.info.width, self.info.height]])
+            else:
+                freespace = np.array([[0, self.info.height]])
+                freespace_dist = [LARGE_INTEGER]
+                freespace_coord = [[0, 0]]
+                
             # img = cv2.fillPoly(img, [freespace], (128, 64, 128))
             
             freespace_coord = np.array(freespace_coord)

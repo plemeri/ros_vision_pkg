@@ -167,8 +167,8 @@ class DriveSceneParser:
                         freespace_dist.append(np.sqrt(point.point.x ** 2 + point.point.y ** 2 + point.point.z ** 2))
                         freespace_coord.append([int(point_projected[0]), int(point_projected[1])])
                         
-            if len(self.freespace_msg.markers) != 0:
-                freespace = np.array(freespace).astype(np.int32)
+            freespace = np.array(freespace).astype(np.int32)
+            if len(freespace) != 0:
                 freespace = freespace[freespace.argsort(axis=0)[:, 0]]
                 freespace = np.vstack([[0, self.info.height], freespace, [self.info.width, self.info.height]])
             else:

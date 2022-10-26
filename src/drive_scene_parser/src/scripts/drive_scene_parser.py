@@ -144,10 +144,7 @@ class DriveSceneParser:
         for i, callback in enumerate(self.callbacks):
             callback(args[i])
             
-        if self.sub_camera is not None:
-            img = self.to_numpy(self.camera_msg).copy()
-        else:
-            img = np.zeros((self.info.height, self.info.width, 3)).astype(np.uint8)
+        img = np.zeros((self.info.height, self.info.width, 3)).astype(np.uint8)
         
         freespace_dist = []
         freespace_coord = []
@@ -155,10 +152,8 @@ class DriveSceneParser:
             freespace = []
             freespace_id = []
             for marker in self.freespace_msg.markers:
-                # if (0 <= marker.id < 90) or (270 < marker.id < 360):
                 if marker.id > 180:
                     point = do_transform_point(PointStamped(point=marker.pose.position), self.trans)
-                    # point = PointStamped(point=marker.pose.position)
                     point_projected = self.model.project3dToPixel((point.point.x, point.point.y, point.point.z))
 
                     if (0 < point_projected[0] < self.info.width) and (0 < point_projected[1] < self.info.height):
@@ -176,7 +171,7 @@ class DriveSceneParser:
                 freespace_dist = [LARGE_INTEGER]
                 freespace_coord = [[0, 0]]
                 
-            # img = cv2.fillPoly(img, [freespace], (128, 64, 128))
+            img = cv2.fillPoly(img, [freespace], (128, 64, 128))
             
             freespace_coord = np.array(freespace_coord)
         
@@ -216,18 +211,14 @@ class DriveSceneParser:
                     
                 forward_det_msg.detections[idx].results[0].score = dist
                 
-                # img = cv2.putText(img, str(int(dist)), tuple(bottom_center), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
-                # img = cv2.putText(img, str(freespace_coord[closest_point]) + str(bottom_center), tuple(bottom_center), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
-                
-        if self.mask_img is not None and self.sub_camera is None:
-            img[~self.mask_img] = [0, 255, 255]
+        img[~self.mask_img] = [0, 255, 255]
                 
         msg = self.bridge.cv2_to_imgmsg(img)
         msg.header.frame_id = self.frame_id
         msg.header.stamp = now
         self.pub1.publish(msg)
         self.pub2.publish(forward_det_msg)
-
+        
     def __len__(self):
         return 0
 

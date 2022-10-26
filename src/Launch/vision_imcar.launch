@@ -19,7 +19,6 @@
     <node pkg="tf"  type="static_transform_publisher" name="$(arg right_camera_frame)_to_camera1" args="0.3 -0.1 0.0 -0.1 0.3 0.0 /camera1 /$(arg right_camera_frame) 10" />
 
     <include file="$(find object_detector)/launch/object_detector_multi_topic.launch">
-        <!-- <arg name="name"               value="$(arg center_camera_frame) $(arg left_camera_frame) $(arg right_camera_frame)"  /> -->
         <arg name="weights"            value="yolov5s.pt" />
         <arg name="frames"             value="$(arg center_camera_frame) $(arg left_camera_frame) $(arg right_camera_frame)"  />
         <arg name="output_image_topic" value="$(arg object_vis_topic)" />
@@ -35,10 +34,10 @@
         <arg name="result_topic"       value="/$(arg center_camera_frame)/traffic_sign" />
     </include>
 
-    <!-- <include file="$(find lane_detector)/launch/lane_detector.launch">
+    <include file="$(find lane_detector)/launch/lane_detector.launch">
         <arg name="input_image_topic" value="/$(arg center_camera_frame)/$(arg image_topic)" />
         <arg name="result_topic"      value="/$(arg center_camera_frame)/$(arg lane_topic)"  />
-    </include> -->
+    </include>
 
     <include file="$(find freespace_detector)/launch/livox_free_space.launch">
         <arg name="pointcloud_topic"  value="$(arg point_topic)" />
@@ -50,7 +49,7 @@
         <arg name="camera_topic"      value="/$(arg center_camera_frame)/$(arg image_topic)" />
         <arg name="camera_info_topic" value="/$(arg center_camera_frame)/$(arg info_topic)" />
         <arg name="object_topic"      value="/$(arg center_camera_frame)/$(arg object_topic)" />
-        <arg name="lane_topic"        value="" />
+        <arg name="lane_topic"        value="/$(arg center_camera_frame)/$(arg lane_topic)" />
         <arg name="freespace_topic"   value="$(arg freespace_vis_topic)" />
         <arg name="result_topic"      value="/$(arg center_camera_frame)/$(arg result_topic)" />
         <arg name="frame_id"          value="$(arg center_camera_frame)" />
@@ -80,7 +79,7 @@
     </include>
 
     <include file="$(find drive_scene_parser)/launch/drive_scene_parser_traffic.launch">
-        <arg name="camera_topic"      value="/$(arg center_camera_frame)/$(arg image_topic)" />
+        <arg name="camera_topic"      value="" />
         <arg name="camera_info_topic" value="/$(arg center_camera_frame)/$(arg info_topic)" />
         <arg name="object_topic"      value="/$(arg center_camera_frame)/traffic_sign" />
         <arg name="lane_topic"        value="" />

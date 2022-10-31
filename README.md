@@ -1,5 +1,7 @@
 # ros_vision_pkg
 
+Perception package for 2022 Ministry of Trade, Industry and Energy Autonomous Driving Challenge [[Link](http://autonomouscar.or.kr/sub304.html)]
+
 # Installation
 
 ## prerequisite
@@ -129,4 +131,10 @@ roslaunch drive_scene_parser drive_scene_parser.launch
 ```
 
 The output of the ```drive_scene_parser``` is ```/image_parsed```
+
+## Acknowledgement
+
+This work was supported by Institute of Information & communications Technology Planning & Evaluation (IITP) grant funded by the Korea government (MSIT) 
+(No.2017-0-00897, Development of Object Detection and Recognition for Intelligent Vehicles) and 
+(No.B0101-15-0266, Development of High Performance Visual BigData Discovery Platform for Large-Scale Realtime Data Analysis)
 
